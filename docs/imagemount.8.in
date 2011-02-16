@@ -1,0 +1,81 @@
+.\"
+.\" imagemount.8.in	- Source for man page
+.\"
+.\" @(#) $RCSfile: imagemount.8.in,v $ $Revision: 1.1 $ (Ideal World, Inc.) $Date: 2010/07/18 13:45:42 $
+.\"
+.\" Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
+.\"
+.\" This program is free software; you can redistribute it and/or modify it
+.\" under the terms of the GNU General Public License as published by the Free
+.\" Software Foundation; either version 2 of the License, or (at your option)
+.\" any later version.
+.\"
+.TH imagemount 8 "$Date: 2010/07/18 13:45:42 $" "@PACKAGE_STRING@"
+.SH NAME
+imagemount \- Utility to mount a partclone-created image.
+.SH SYNOPSIS
+imagemount -d nbd-dev -f image-file [-c change-file] 
+[-m mount-point [-t mount-type]] [-v verbose] [-Drw]
+.SH DESCRIPTION
+.B imagemount
+creates network block devices from images created by
+.B partclone(8)
+and optionally mounts the image on the file system.
+.SH OPTIONS
+.TP
+.B -d DEVICE
+Use specified 
+.B nbd
+device as block device.
+.TP
+.B -f IMAGE-FILE
+Use specified file as source for the image.
+.TP
+.B -c CHANGE-FILE
+Use specified file to store written data.
+.TP
+.B -m MOUNT-POINT
+Mount block device on this mount point.
+.TP
+.B -t MOUNT-TYPE
+Mount block device as this type of file system.
+.TP
+.B -v VERBOSE
+Select logging level.
+.TP
+.B -D
+Toggle daemon mode (default on).
+.TP
+.B -r
+Enable read-only mode.
+.TP
+.B -w
+Enable write to image (if change file not specified, then changes are
+stored in IMAGE-FILE.cf)
+.SH Examples
+Mount image 
+.B /dir/image
+using
+.B /dev/nbd0
+on 
+.B /mountpoint
+with type
+.B fstype
+in read-write mode.  (Note that changes to the filesystem will be stored in
+/dir/image.cf)
+.nf
+.B "	imageclone -d /dev/nbd0 -f /dir/image -m /mountpoint -t fstype -w
+.fi
+
+Use image
+.B /dir/image
+as network block device
+.B /dev/nbd0
+in read-only mode.
+.nf
+.B "	imageclone -d /dev/nbd0 -f /dir/image -r
+.fi
+.SH See Also
+.BR partclone(8)
+.SH Bug Reporting
+Please report bugs to @PACKAGE_BUGREPORT@
