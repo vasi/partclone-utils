@@ -1,3 +1,9 @@
+August 2011	Paul Park	paul@idealworldinc.com
+	Handle "iffy" images from partclone.  Specifically, handle
+	inconsistencies between the used block count in the header and the
+	number of blocks marked in the bitmap.  Also, change interpretation of
+	the bitmap to match partclone: 1 = used; not 1 = unused.
+
 August 2010	Paul Park	paul@idealworldinc.com
 	Trivial change from initial revision - check for <sys/capability.h> and
 	use that to switch the checking of capabilities on and off.

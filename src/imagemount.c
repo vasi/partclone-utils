@@ -416,19 +416,30 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 	    /*
 	     * Calculate the required read buffer and adjust if necessary.
 	     */
-	    req_readbuf = blockcount * ncp->svc_blocksize;
-	    while (req_readbuf > readbuf_size) {
-		char *nrbuf = malloc(req_readbuf);
+	    if (endblockoffs > startblockoffs) {
+		req_readbuf = blockcount * ncp->svc_blocksize;
+		while (req_readbuf > readbuf_size) {
+		    char *nrbuf = malloc(req_readbuf);
 
-		if (nrbuf) {
-		    readbuf_size = req_readbuf;
-		    free(readbuf);
-		    readbuf = nrbuf;
-		} else {
-		    logmsg(ncp, 0, 
-			   "[%s] retrying allocation of %d byte buffer\n",
-			   ncp->svc_progname, req_readbuf);
-		    sleep(10);
+		    if (nrbuf) {
+			readbuf_size = req_readbuf;
+			free(readbuf);
+			readbuf = nrbuf;
+		    } else {
+			if (req_readbuf < 0x80000000UL) {
+			    logmsg(ncp, 0, 
+				   "[%s] retrying allocation of %d byte buffer\n",
+				   ncp->svc_progname, req_readbuf);
+			    sleep(10);
+			} else {
+			    logmsg(ncp, 0,
+				   "[%s] not retrying allocation of %d byte buffer\n",
+				   ncp->svc_progname, req_readbuf);
+			    timetoleave = 1;
+			    error = ENOMEM;
+			    break;
+			}
+		    }
 		}
 	    }
 
@@ -491,9 +502,16 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 					   "NBD_WRITE: write fail %d\n", error);
 				}
 			    } else {
-				logmsg(ncp, 1,
-				       "NBD_WRITE fail: short read of data\n");
-				error = EIO;
+				if (rlength >= 0) {
+				    logmsg(ncp, 1,
+					   "NBD_WRITE fail: short read of data\n");
+				    error = EIO;
+				} else {
+				    error = errno;
+				    logmsg(ncp, 1,
+					   "NBD_WRITE fail: read fail %d\n",
+					   error);
+				}
 			    }
 			} else {
 			    logmsg(ncp, 1, "NBD_WRITE: priming read fail %d\n",

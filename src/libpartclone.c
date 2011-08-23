@@ -756,7 +756,16 @@ v1_verify(pc_context_t *pcp)
 				    v1p->v1_sumcount[i>>v1p->v1_bitmap_factor] =
 					nset;
 				}
-				if (v1p->v1_bitmap[i])
+				/* [2011-08]
+				 * ...sigh... the *bitmap* can have more than
+				 * two values.  It can be 1, in which case it's
+				 * definitely in the file.  It can be zero
+				 * in which case, it's definitely not in the
+				 * file.  And it can be anything else that fits
+				 * into a byte?  What does it mean?  I don't
+				 * know.  But it's not set.
+				 */
+				if (v1p->v1_bitmap[i] == 1)
 				    nset++;
 			    }
 			    /*
@@ -771,8 +780,25 @@ v1_verify(pc_context_t *pcp)
 			     * Is the count of used blocks good?
 			     */
 			    if (pcp->pc_head.usedblocks != nset) {
+			        /* [2011-08]
+				 * What should we do in this case?  The old
+				 * version punted, thinking that it is an
+				 * inconsistency.  However, at the time of
+				 * header construction it may not be possible
+				 * to get a definitive count of used blocks
+				 * without scanning the entire bitmap.  So
+				 * some filesystems use a derived count, which
+				 * can be off.  So, we don't turn on
+				 * STRICT_HEADERS (for now).
+				 */
+#ifdef	STRICT_HEADERS
 				error = EFAULT;
-			    } else {
+#else	/* STRICT_HEADERS */
+				/* what?! - Fix it up silently. */
+				pcp->pc_head.usedblocks = nset;
+#endif	/* STRICT_HEADERS */
+			    } 
+			    if (!error) {
 				/*
 				 * Verify the change file, if present.
 				 */
@@ -945,6 +971,7 @@ v1_readblock(pc_context_t *pcp, void *buffer)
 	     * If we're reading an invalid block, use the handy buffer.
 	     */
 	    memcpy(buffer, pcp->pc_ivblock, pcp->pc_head.block_size);
+	    error = 0;	/* This shouldn't be necessary... */
 	}
     }
     return(error);
