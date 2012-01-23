@@ -18,6 +18,7 @@
 #endif	/* HAVE_CONFIG_H */
 #include <stdarg.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
