@@ -13,7 +13,7 @@
 
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.62)
-AC_INIT([partclone-utils], [0.1.3], [xppppp@sf.net])
+AC_INIT([partclone-utils], [0.1.4], [xppppp@sf.net])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
