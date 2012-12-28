@@ -19,6 +19,6 @@ libpartclone_a_SOURCES = libpartclone.c
 libsysdep_posix_a_SOURCES = sysdep_posix.c
 
 imagemount_SOURCES = imagemount.c
-imagemount_LDADD = libpartclone.a libsysdep_posix.a -lcap
+imagemount_LDADD = libpartclone.a libsysdep_posix.a
 libpctest_SOURCES = libpctest.c
 libpctest_LDADD = libpartclone.a libsysdep_posix.a
