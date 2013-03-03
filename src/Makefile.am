@@ -13,12 +13,15 @@
 sbin_PROGRAMS = imagemount
 noinst_PROGRAMS = libpctest
 
-noinst_HEADERS = sysdep_int.h sysdep_posix.h partclone.h libpartclone.h
-noinst_LIBRARIES = libpartclone.a libsysdep_posix.a
+noinst_HEADERS = sysdep_int.h sysdep_posix.h partclone.h libpartclone.h libntfsclone.h libimage.h changefile.h
+noinst_LIBRARIES = libntfsclone.a libpartclone.a libimage.a libchangefile.a libsysdep_posix.a 
+libntfsclone_a_SOURCES = libntfsclone.c
 libpartclone_a_SOURCES = libpartclone.c
+libimage_a_SOURCES = libimage.c
+libchangefile_a_SOURCES = changefile.c
 libsysdep_posix_a_SOURCES = sysdep_posix.c
 
 imagemount_SOURCES = imagemount.c
-imagemount_LDADD = libpartclone.a libsysdep_posix.a -lcap
+imagemount_LDADD = libimage.a libpartclone.a libntfsclone.a libchangefile.a libsysdep_posix.a -lcap
 libpctest_SOURCES = libpctest.c
-libpctest_LDADD = libpartclone.a libsysdep_posix.a
+libpctest_LDADD = libpartclone.a libchangefile.a libsysdep_posix.a

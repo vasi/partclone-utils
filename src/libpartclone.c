@@ -18,8 +18,12 @@
 #endif	/* HAVE_CONFIG_H */
 #include <errno.h>
 #include <string.h>
+#include <changefile.h>
 #include <partclone.h>
 #include <libpartclone.h>
+#include <libimage.h>
+
+static const char cf_trailer[] = ".cf";
 
 /*
  * pc_context_t	- Handle to access partclone images.  Used internally.
@@ -42,13 +46,11 @@ struct change_file_context;
 #define	PC_READ_ONLY	0x80000		/* Open read only */
 typedef struct libpc_context {
     void		*pc_fd;		/* File handle */
-    void		*pc_cf_fd;	/* Change file file handle */
     char 		*pc_path;	/* Path to image */
     char		*pc_cf_path;	/* Path to change file */
+    void		*pc_cf_handle;	/* Change file handle */
     unsigned char	*pc_ivblock;	/* Convenient invalid block */
     void		*pc_verdep;	/* Version-dependent handle */
-    struct change_file_context
-			*pc_cfdep;	/* Change file handle */
     struct version_dispatch_table
 			*pc_dispatch;	/* Version-dependent dispatch */
     const sysdep_dispatch_t
@@ -56,6 +58,7 @@ typedef struct libpc_context {
     image_head		pc_head;	/* Image header */
     u_int64_t		pc_curblock;	/* Current position */
     u_int32_t		pc_flags;	/* Handle flags */
+    sysdep_open_mode_t	pc_omode;	/* Open mode */
 } pc_context_t;
 
 /*
@@ -111,526 +114,6 @@ typedef struct version_dispatch_table {
 #define	CRC_TABLE_LEN	(1<<CRC_UNIT_BITS)
 
 /*
- * Change file header.
- */
-#define	CF_MAGIC_1	0xdeadbeef
-#define	CF_MAGIC_2	0xfeedf00d
-#define	CF_MAGIC_3	0x3a070045
-#define	CF_VERSION_1	1
-#define	CF_HEADER_DIRTY	1
-typedef struct change_file_header {
-    u_int32_t	cf_magic;		/* 0x00 - magic */
-    u_int16_t	cf_version;		/* 0x04 - version */
-    u_int16_t	cf_flags;		/* 0x06 - flags */
-    u_int64_t	cf_total_blocks;	/* 0x08 - total blocks */
-    u_int64_t	cf_used_blocks;		/* 0x10 - used blocks */
-    u_int32_t	cf_blockmap_offset;	/* 0x18 - blockmap offset */
-    u_int32_t	cf_magic2;		/* 0x1c - magic2 */
-} cf_header_t;				/* 0x20 - total size */
-
-typedef struct change_file_context {
-    cf_header_t	cfc_header;
-    u_int64_t	*cfc_blockmap;
-    u_int32_t	cfc_crc_tab32[CRC_TABLE_LEN];
-} cf_context_t;
-
-typedef struct change_file_block_trailer {
-    u_int64_t	cfb_curblock;
-    u_int32_t	cfb_crc;
-    u_int32_t	cfb_magic;
-} cf_block_trailer_t;
-
-/*
- * String to append to path to create a change file when none is specified.
- */
-static const char cf_name_append[] = ".cf";
-
-/*
- * cf_init	- Initialize change file handling.
- *
- * Allocate and initialize change file handle.
- */
-static int
-cf_init(pc_context_t *pcp)
-{
-    int error = EINVAL;
-
-    if (PCTX_VALID(pcp)) {
-	if (pcp->pc_cf_fd) {
-	    cf_context_t *cfp;
-	    if ((error = (*pcp->pc_sysdep->sys_malloc)(&cfp, sizeof(*cfp)))
-		== 0) {
-		int i;
-		memset(cfp, 0, sizeof(*cfp));
-		pcp->pc_cfdep = cfp;
-		pcp->pc_flags |= (PC_HAVE_CFDEP|PC_CF_INIT);
-		/*
-		 * Initialize the CRC table.
-		 */
-		for (i=0; i<CRC_TABLE_LEN; i++) {
-		    int j;
-		    u_int32_t init_crc = (u_int32_t) i;
-		    for (j=0; j<CRC_UNIT_BITS; j++) {
-			init_crc = (init_crc & 0x00000001L) ?
-			    (init_crc >> 1) ^ 0xEDB88320L :
-			    (init_crc >> 1);
-		    }
-		    cfp->cfc_crc_tab32[i] = init_crc;
-		}
-	    }
-	} else {
-	    error = 0;
-	}
-    }
-    return(error);
-}
-
-/*
- * cf_verify	- Verify the change file.
- *
- * - Load the blockmap.
- */
-static int
-cf_verify(pc_context_t *pcp)
-{
-    int error = EINVAL;
-
-    if (PCTX_VALID(pcp)) {
-	if (PCTX_HAVE_CFDEP(pcp) && pcp->pc_cf_fd) {
-	    cf_context_t *cfp = pcp->pc_cfdep;
-	    u_int64_t nread;
-
-	    /*
-	     * Make sure we're at the beginning of the file.
-	     */
-	    (void) (*pcp->pc_sysdep->sys_seek)(pcp->pc_cf_fd,
-					       0,
-					       SYSDEP_SEEK_ABSOLUTE,
-					       (u_int64_t *) NULL);
-	    if (((error = (*pcp->pc_sysdep->sys_read)(pcp->pc_cf_fd,
-						     &cfp->cfc_header,
-						     sizeof(cfp->cfc_header),
-						     &nread)) == 0) &&
-		(nread == sizeof(cfp->cfc_header))) {
-		/*
-		 * Verify read header.
-		 */
-		if ((cfp->cfc_header.cf_magic == CF_MAGIC_1) &&
-		    (cfp->cfc_header.cf_magic2 == CF_MAGIC_2) &&
-		    (cfp->cfc_header.cf_total_blocks == 
-		     pcp->pc_head.totalblock)) {
-		    u_int64_t bhsize = cfp->cfc_header.cf_total_blocks *
-			sizeof(*cfp->cfc_blockmap);
-		    /*
-		     * Allocate, find and read the blockmap.
-		     */
-		    if ((error = 
-			 (*pcp->pc_sysdep->sys_malloc)(&cfp->cfc_blockmap,
-						       bhsize))
-			== 0) {
-			if ((error = 
-			     (*pcp->pc_sysdep->sys_seek)(pcp->pc_cf_fd,
-							 cfp->cfc_header.
-							 cf_blockmap_offset,
-							 SYSDEP_SEEK_ABSOLUTE,
-							 (u_int64_t *) NULL)
-				) == 0) {
-			    if (((error =
-				  (*pcp->pc_sysdep->sys_read)(pcp->pc_cf_fd,
-							      cfp->cfc_blockmap,
-							      bhsize,
-							      &nread)) == 0) &&
-				(nread == bhsize)) {
-				pcp->pc_flags |= PC_CF_VERIFIED;
-			    } else {
-				if (error == 0)
-				    error = EIO;
-			    }
-			}
-		    }
-		} else {
-		    error = ENODEV;
-		}
-	    } else {
-		if (error == 0) {
-		    /* Implies rsize != sizeof(cfp->cfc_header) */
-		    error = EIO;
-		}
-	    }
-	} else {
-	    error = 0;
-	}
-    }
-    return(error);
-}
-
-/*
- * cf_create	- Create change file if necessary.
- */
-static int
-cf_create(pc_context_t *pcp)
-{
-    int error = EROFS;
-
-    if (PCTX_WRITEABLE(pcp)) {
-	if (!pcp->pc_cf_fd) {
-	    if (!pcp->pc_cf_path && PCTX_HAVE_PATH(pcp)) {
-		u_int64_t nb = strlen(pcp->pc_path);
-		if ((error = 
-		     (*pcp->pc_sysdep->sys_malloc)(&pcp->pc_cf_path,
-						   nb +
-						   sizeof(cf_name_append)))
-		    == 0) {
-		    memcpy(pcp->pc_cf_path, pcp->pc_path, nb);
-		    memcpy(&pcp->pc_cf_path[nb], cf_name_append, 
-			   sizeof(cf_name_append));
-		    pcp->pc_flags |= PC_HAVE_CF_PATH;
-		}
-	    }
-	    if (pcp->pc_cf_path) {
-		/*
-		 * First try to open an existing change file.
-		 */
-		if ((error = (*pcp->pc_sysdep->sys_open)(&pcp->pc_cf_fd,
-							 pcp->pc_cf_path,
-							 SYSDEP_OPEN_RW)) 
-		    != 0) {
-		    /*
-		     * Open failed - try to create it.
-		     */
-		    if ((error = 
-			 (*pcp->pc_sysdep->sys_open)(&pcp->pc_cf_fd,
-						     pcp->pc_cf_path,
-						     SYSDEP_CREATE)) == 0) {
-			cf_header_t ncfh;
-			u_int64_t *bmp;
-			/*
-			 * A new file!
-			 */
-			ncfh.cf_magic = CF_MAGIC_1;
-			ncfh.cf_version = CF_VERSION_1;
-			ncfh.cf_flags = 0;
-			ncfh.cf_total_blocks = pcp->pc_head.totalblock;
-			ncfh.cf_used_blocks = 0;
-			ncfh.cf_blockmap_offset = sizeof(ncfh);
-			ncfh.cf_magic2 = CF_MAGIC_2;
-			if ((error = 
-			     (*pcp->pc_sysdep->sys_malloc)(&bmp,
-							   pcp->pc_head.
-							   totalblock * 
-							   sizeof(u_int64_t))) 
-			    == 0) {
-			    u_int64_t nwritten;
-			    memset(bmp, 0, pcp->pc_head.totalblock * 
-				   sizeof(u_int64_t));
-			    if (((error = 
-				  (*pcp->pc_sysdep->sys_write)(pcp->pc_cf_fd,
-							       &ncfh,
-							       sizeof(ncfh),
-							       &nwritten)) 
-				 == 0) &&
-				(nwritten == sizeof(ncfh)) &&
-				((error =
-				  (*pcp->pc_sysdep->sys_write)
-				  (pcp->pc_cf_fd,
-				   bmp,
-				   pcp->pc_head.
-				   totalblock * sizeof(u_int64_t),
-				   &nwritten))
-				 == 0) &&
-				(nwritten == (pcp->pc_head.totalblock *
-					      sizeof(u_int64_t)))) {
-				/* nothing to do */;
-
-			    }
-			    (void) (*pcp->pc_sysdep->sys_free)(bmp);
-			}
-		    }
-		}
-		if (!error && pcp->pc_cf_fd)
-		    pcp->pc_flags |= PC_CF_OPEN;
-		/*
-		 * If we are successful thus far, then we have a
-		 * candidate change file.
-		 */
-		if ((error = cf_init(pcp)) == 0) {
-		    error = cf_verify(pcp);
-		}
-	    }
-	} else {
-	    error = EAGAIN;
-	}
-    }
-    return(error);
-}
-
-/*
- * cf_sync	- Sync change file changes to image.
- */
-static int
-cf_sync(pc_context_t *pcp)
-{
-    int error = EROFS;
-    if (PCTX_WRITEREADY(pcp)) {
-	if (pcp->pc_cfdep->cfc_header.cf_flags & CF_HEADER_DIRTY) {
-	    cf_header_t oheader = pcp->pc_cfdep->cfc_header;
-	    u_int64_t nwritten;
-
-	    oheader.cf_flags &= ~CF_HEADER_DIRTY;
-	    /*
-	     * Seek and write the sanitized header and block map.
-	     */
-	    if (((error = (*pcp->pc_sysdep->sys_seek)(pcp->pc_cf_fd,
-						      0,
-						      SYSDEP_SEEK_ABSOLUTE,
-						      (u_int64_t *) NULL)) 
-		 == 0) &&
-		((error = (*pcp->pc_sysdep->sys_write)(pcp->pc_cf_fd,
-						       &oheader,
-						       sizeof(oheader),
-						       &nwritten)) == 0) &&
-		(nwritten == sizeof(oheader)) &&
-		((error = (*pcp->pc_sysdep->sys_seek)(pcp->pc_cf_fd,
-						      oheader.
-						      cf_blockmap_offset,
-						      SYSDEP_SEEK_ABSOLUTE,
-						      (u_int64_t *) NULL)) 
-		 == 0) &&
-		((error = (*pcp->pc_sysdep->sys_write)(pcp->pc_cf_fd,
-						       pcp->pc_cfdep->
-						       cfc_blockmap,
-						       oheader.cf_total_blocks *
-						       sizeof(u_int64_t),
-						       &nwritten)) == 0) &&
-		(nwritten == (oheader.cf_total_blocks * sizeof(u_int64_t)))) {
-		/*
-		 * If successful, then we're no longer dirty.
-		 */
-		pcp->pc_cfdep->cfc_header.cf_flags &= ~CF_HEADER_DIRTY;
-	    }
-	} else {
-	    /*
-	     * Not dirty.
-	     */
-	    error = 0;
-	}
-    }
-    return(error);
-}
-
-/*
- * cf_finish	- Finish change file handling.
- *
- * Free structures.
- */
-static int
-cf_finish(pc_context_t *pcp)
-{
-    int error = EINVAL;
-
-    if (PCTX_VALID(pcp)) {
-	if (PCTX_HAVE_CFDEP(pcp)) {
-	    cf_context_t *cfp = pcp->pc_cfdep;
-	    /*
-	     * See if we're dirty first and flush what we have if we are.
-	     */
-	    if (cfp->cfc_header.cf_flags & CF_HEADER_DIRTY)
-		(void) cf_sync(pcp);
-	    if (cfp->cfc_blockmap)
-		(void) (*pcp->pc_sysdep->sys_free)(cfp->cfc_blockmap);
-	    (void) (*pcp->pc_sysdep->sys_free)(cfp);
-	    pcp->pc_flags &= ~PC_HAVE_CFDEP;
-	} else {
-	    error = 0;
-	}
-    }
-    return(error);
-}
-
-/*
- * cf_seek	- Change file handling for seeking to a particular block.
- */
-static int
-cf_seek(pc_context_t *pcp, u_int64_t blockno)
-{
-    int error = EINVAL;
-
-    if (PCTX_VALID(pcp)) {
-	if (PCTX_CFREADY(pcp)) {
-	    cf_context_t *cfp = pcp->pc_cfdep;
-	    error = (blockno <= cfp->cfc_header.cf_total_blocks) ? 0 : ENXIO;
-	} else {
-	    error = 0;
-	}
-    }
-    return(error);
-}
-
-/*
- * CRC routine.
- */
-static inline u_int32_t
-cf_crc32(cf_context_t *cfp, u_int32_t crc, unsigned char *buf, u_int64_t size)
-{
-    u_int64_t s;
-    u_int32_t tmp;
-
-    for (s=0; s<size; s++) {
-	tmp = crc ^ (((u_int32_t) buf[s]) & 0x000000ffL);
-	crc = (crc >> 8) ^ cfp->cfc_crc_tab32[ tmp & 0xff ];
-    }
-    return(crc);
-}
-
-/*
- * cf_readblock	- Read the block at the current position.
- */
-static int
-cf_readblock(pc_context_t *pcp, void *buffer)
-{
-    int error = EINVAL;
-
-    if (PCTX_VALID(pcp)) {
-	if (PCTX_CFREADY(pcp)) {
-	    cf_context_t *cfp = pcp->pc_cfdep;
-
-	    /*
-	     * Check the block map for an offset.
-	     */
-	    if (cfp->cfc_blockmap[pcp->pc_curblock]) {
-		/*
-		 * If present, seek and read the block and trailer.
-		 */
-		if ((error = 
-		     (*pcp->pc_sysdep->sys_seek)(pcp->pc_cf_fd,
-						 cfp->cfc_blockmap
-						 [pcp->pc_curblock],
-						 SYSDEP_SEEK_ABSOLUTE,
-						 (u_int64_t *) NULL)) == 0) {
-		    u_int64_t rsize = pcp->pc_head.block_size;
-		    cf_block_trailer_t btrail;
-		    u_int64_t nread;
-		    if (((error =
-			  (*pcp->pc_sysdep->sys_read)(pcp->pc_cf_fd,
-						      buffer,
-						      rsize,
-						      &nread)) == 0) &&
-			(nread == rsize)) {
-			rsize = sizeof(cf_block_trailer_t);
-			if (((error =
-			      (*pcp->pc_sysdep->sys_read)(pcp->pc_cf_fd,
-							  &btrail,
-							  rsize,
-							  &nread)) == 0) &&
-			    (nread == rsize)) {
-			    /*
-			     * Verify the trailer.
-			     */
-			    if ((btrail.cfb_curblock == pcp->pc_curblock) &&
-				(btrail.cfb_magic == CF_MAGIC_3) &&
-				(btrail.cfb_crc == cf_crc32(cfp,
-							    0L,
-							    buffer,
-							    pcp->pc_head.
-							    block_size))) {
-				error = 0;
-			    } else {
-				error = ESRCH;
-			    }
-			} else {
-			    if (!error)
-				error = EIO;
-			}
-		    } else {
-			if (!error)
-			    error = EIO;
-		    }
-		}
-	    } else {
-		error = ENXIO;
-	    }
-	} else {
-	    error = ENXIO;
-	}
-    }
-    return(error);
-}
-
-/*
- * cf_blockused	- Is the current block in use?
- */
-static int
-cf_blockused(pc_context_t *pcp)
-{
-    int retval = 0;
-
-    if (PCTX_VALID(pcp) &&
-	PCTX_CFREADY(pcp) &&
-	(pcp->pc_cfdep->cfc_blockmap[pcp->pc_curblock])) {
-	retval = 1;
-    }
-    return(retval);
-}
-
-/*
- * cf_writeblock	- Write block at current location.
- */
-static int
-cf_writeblock(pc_context_t *pcp, void *buffer)
-{
-    int error = EROFS;
-    if (PCTX_WRITEREADY(pcp)) {
-	u_int64_t nbloffs = pcp->pc_cfdep->cfc_blockmap[pcp->pc_curblock];
-	u_int64_t curpos;
-
-	if ((error = (*pcp->pc_sysdep->sys_seek)(pcp->pc_cf_fd,
-						 nbloffs,
-						 (nbloffs) ?
-						 SYSDEP_SEEK_ABSOLUTE :
-						 SYSDEP_SEEK_END,
-						 &curpos)) == 0) {
-	    cf_block_trailer_t btrail = { pcp->pc_curblock, 
-					  cf_crc32(pcp->pc_cfdep,
-						   0, 
-						   buffer,
-						   pcp->pc_head.block_size), 
-					  CF_MAGIC_3 };
-	    u_int64_t nwritten;
-	    if (((error = (*pcp->pc_sysdep->sys_write)(pcp->pc_cf_fd,
-						       buffer,
-						       pcp->pc_head.block_size,
-						       &nwritten)) == 0) &&
-		(nwritten == pcp->pc_head.block_size) &&
-		((error = (*pcp->pc_sysdep->sys_write)(pcp->pc_cf_fd,
-						       &btrail,
-						       sizeof(btrail),
-						       &nwritten)) == 0) &&
-		(nwritten == sizeof(btrail))) {
-		/*
-		 * Write success.
-		 */
-		if (!nbloffs) {
-		    /*
-		     * We made a new block.
-		     */
-		    pcp->pc_cfdep->cfc_blockmap[pcp->pc_curblock] = curpos;
-		    pcp->pc_cfdep->cfc_header.cf_used_blocks++;
-		    pcp->pc_cfdep->cfc_header.cf_flags |= CF_HEADER_DIRTY;
-		}
-	    }
-	}
-    }
-    return(error);
-}
-
-static const v_dispatch_table_t
-change_file_table[] = {
-    { "CHGF",	/* not really used */
-      cf_init, cf_verify, cf_finish, cf_seek, cf_readblock, cf_blockused,
-      cf_writeblock, cf_sync },
-};
-
-/*
  * This really should be in partclone.h.
  */
 static const char cmagicstr[] = "BiTmAgIc";
@@ -671,22 +154,36 @@ v1_init(pc_context_t *pcp)
 	    pcp->pc_verdep = v1p;
 	    pcp->pc_flags |= (PC_HAVE_VERDEP|PC_VERSION_INIT);
 
-	    if ((error = cf_init(pcp)) == 0) {
-		/*
-		 * Initialize the CRC table.
-		 */
-		for (i=0; i<CRC_TABLE_LEN; i++) {
-		    int j;
-		    unsigned long init_crc = (unsigned long) i;
-		    for (j=0; j<CRC_UNIT_BITS; j++) {
-			init_crc = (init_crc & 0x00000001L) ?
-			    (init_crc >> 1) ^ 0xEDB88320L :
-			    (init_crc >> 1);
-		    }
-		    v1p->v1_crc_tab32[i] = init_crc;
-		}
-		v1p->v1_bitmap_factor = V1_DEFAULT_FACTOR;
+	    if (pcp->pc_cf_path && 
+		((int) pcp->pc_omode >= (int) SYSDEP_OPEN_RW) &&
+		((error = cf_init(pcp->pc_cf_path, pcp->pc_sysdep,
+				  pcp->pc_head.block_size,
+				  pcp->pc_head.totalblock,
+				  &pcp->pc_cf_handle)) == 0)) {
+		pcp->pc_flags |= PC_CF_OPEN;
+	    } else {
+		if ((int) pcp->pc_omode < (int) SYSDEP_OPEN_RW)
+		    pcp->pc_flags |= PC_READ_ONLY;
+		else
+		    /*
+		     * Completely discard errors here.
+		     */
+		    error = 0;
 	    }
+	    /*
+	     * Initialize the CRC table.
+	     */
+	    for (i=0; i<CRC_TABLE_LEN; i++) {
+		int j;
+		unsigned long init_crc = (unsigned long) i;
+		for (j=0; j<CRC_UNIT_BITS; j++) {
+		    init_crc = (init_crc & 0x00000001L) ?
+			(init_crc >> 1) ^ 0xEDB88320L :
+			(init_crc >> 1);
+		}
+		v1p->v1_crc_tab32[i] = init_crc;
+	    }
+	    v1p->v1_bitmap_factor = V1_DEFAULT_FACTOR;
 	}
     }
     return(error);
@@ -798,11 +295,13 @@ v1_verify(pc_context_t *pcp)
 				pcp->pc_head.usedblocks = nset;
 #endif	/* STRICT_HEADERS */
 			    } 
-			    if (!error) {
+			    if (!error && pcp->pc_cf_handle) {
 				/*
 				 * Verify the change file, if present.
 				 */
-				error = cf_verify(pcp);
+				error = cf_verify(pcp->pc_cf_handle);
+				if (!error)
+				    pcp->pc_flags |= PC_CF_VERIFIED;
 			    }
 			}
 		    } else {
@@ -835,7 +334,8 @@ v1_finish(pc_context_t *pcp)
 	    (void) (*pcp->pc_sysdep->sys_free)(v1p->v1_sumcount);
 	(void) (*pcp->pc_sysdep->sys_free)(v1p);
 	pcp->pc_flags &= ~PC_HAVE_VERDEP;
-	error = cf_finish(pcp);
+	if (pcp->pc_cf_handle)
+	    error = cf_finish(pcp->pc_cf_handle);
     }
     return(error);
 }
@@ -866,7 +366,8 @@ v1_seek(pc_context_t *pcp, u_int64_t blockno)
 		v1p->v1_nvbcount++;
 	    }
 	}
-	error = cf_seek(pcp, blockno);
+	if (pcp->pc_cf_handle)
+	    error = cf_seek(pcp->pc_cf_handle, blockno);
     }
     return(error);
 }
@@ -919,7 +420,8 @@ v1_readblock(pc_context_t *pcp, void *buffer)
      * Check to see if we can get the result from the change file.
      */
     if (PCTX_HAVE_VERDEP(pcp) &&
-	((error = cf_readblock(pcp, buffer)) != 0)) {
+	(!pcp->pc_cf_handle || 
+	 ((error = cf_readblock(pcp->pc_cf_handle, buffer)) != 0))) {
 	v1_context_t *v1p = (v1_context_t *) pcp->pc_verdep;
 
 	/*
@@ -987,7 +489,8 @@ v1_blockused(pc_context_t *pcp)
     if (PCTX_HAVE_VERDEP(pcp)) {
 	v1_context_t *v1p = (v1_context_t *) pcp->pc_verdep;
 
-	retval = (cf_blockused(pcp)) ? 1 : v1p->v1_bitmap[pcp->pc_curblock];
+	retval = (pcp->pc_cf_handle && cf_blockused(pcp->pc_cf_handle)) ? 1 : 
+	    v1p->v1_bitmap[pcp->pc_curblock];
     }
     return(retval);
 }
@@ -1005,12 +508,32 @@ v1_writeblock(pc_context_t *pcp, void *buffer)
      */
     if (PCTX_HAVE_VERDEP(pcp)) {
 	if (!PCTX_WRITEREADY(pcp)) {
-	    error = cf_create(pcp);
+	    if (!PCTX_HAVE_CF_PATH(pcp)) {
+		/*
+		 * We have to make up a name.
+		 */
+		if ((error = 
+		     (*pcp->pc_sysdep->sys_malloc)(&pcp->pc_cf_path,
+						   strlen(pcp->pc_path) +
+						   strlen(cf_trailer) + 1)) 
+		    == 0) {
+		    memcpy(pcp->pc_cf_path, pcp->pc_path, strlen(pcp->pc_path));
+		    memcpy(&pcp->pc_cf_path[strlen(pcp->pc_path)],
+			   cf_trailer, strlen(cf_trailer)+1);
+		    pcp->pc_flags |= PC_HAVE_CF_PATH;
+		}
+	    }
+	    error = cf_create(pcp->pc_cf_path, pcp->pc_sysdep,
+			      pcp->pc_head.block_size, pcp->pc_head.totalblock,
+			      &pcp->pc_cf_handle);
+	    if (!error) {
+		pcp->pc_flags |= (PC_HAVE_CFDEP|PC_CF_VERIFIED);
+	    }
 	} else {
 	    error = 0;
 	}
 	if (!error) {
-	    error = cf_writeblock(pcp, buffer);
+	    error = cf_writeblock(pcp->pc_cf_handle, buffer);
 	}
     }
     return(error);
@@ -1024,7 +547,7 @@ v1_sync(pc_context_t *pcp)
 {
     int error = EINVAL;
     if (PCTX_WRITEREADY(pcp)) {
-	error = cf_sync(pcp);
+	error = cf_sync(pcp->pc_cf_handle);
     }
     return(error);
 }
@@ -1051,7 +574,6 @@ partclone_close(void *rp)
     if (PCTX_VALID(pcp)) {
 	if (PCTX_CF_OPEN(pcp)) {
 	    (void) (*pcp->pc_dispatch->version_sync)(pcp);
-	    (void) (*pcp->pc_sysdep->sys_close)(pcp->pc_cf_fd);
 	}
 	if (PCTX_OPEN(pcp)) {
 	    (void) (*pcp->pc_sysdep->sys_close)(pcp->pc_fd);
@@ -1101,22 +623,7 @@ partclone_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
 		     (*pcp->pc_sysdep->sys_malloc)(&pcp->pc_path,
 						   strlen(path)+1)) == 0) {
 		    pcp->pc_flags |= PC_HAVE_PATH;
-		    memcpy(pcp->pc_path, path, strlen(path)+1);
-		    if (cfpath && ((int) omode >= (int) SYSDEP_OPEN_RW) &&
-			((error = (*pcp->pc_sysdep->sys_open)(&pcp->pc_cf_fd,
-							      cfpath,
-							      SYSDEP_OPEN_RW))
-			 == 0)) {
-			pcp->pc_flags |= PC_CF_OPEN;
-		    } else {
-			if ((int) omode < (int) SYSDEP_OPEN_RW)
-			    pcp->pc_flags |= PC_READ_ONLY;
-			else
-			    /*
-			     * Completely discard errors here.
-			     */
-			    error = 0;
-		    }
+		    pcp->pc_omode = omode;
 		    if (cfpath &&
 			((error = 
 			  (*pcp->pc_sysdep->sys_malloc)(&pcp->pc_cf_path,
@@ -1359,3 +866,38 @@ partclone_sync(void *rp)
 	    (*pcp->pc_dispatch->version_sync)(pcp) :
 	    EINVAL );
 }
+
+/*
+ * partclone_probe	- Is this a partclone image?
+ */
+int
+partclone_probe(const char *path, const sysdep_dispatch_t *sysdep)
+{
+    void *testh = (void *) NULL;
+    int error = partclone_open(path, (char *) NULL, SYSDEP_OPEN_RO,
+			       sysdep, &testh);
+    if (!error) {
+	error = partclone_verify(testh);
+	partclone_close(testh);
+    }
+    return(error);
+}
+
+/*
+ * The image type dispatch table.
+ */
+const image_dispatch_t partclone_image_type = {
+    "partclone image",
+    partclone_probe,
+    partclone_open,
+    partclone_close,
+    partclone_verify,
+    partclone_blocksize,
+    partclone_blockcount,
+    partclone_seek,
+    partclone_tell,
+    partclone_readblocks,
+    partclone_block_used,
+    partclone_writeblocks,
+    partclone_sync
+};

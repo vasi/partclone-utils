@@ -1,5 +1,5 @@
 /*
- * imagemount.c	- Attach and optionally mount a partclone image.
+ * imagemount.c	- Attach and optionally mount a filesystem block image.
  */
 /*
  * @(#) $RCSfile: imagemount.c,v $ $Revision: 1.4 $ (Ideal World, Inc.) $Date: 2010/08/15 12:39:36 $
@@ -34,7 +34,7 @@
 #ifdef	HAVE_SYS_CAPABILITY_H
 #include <sys/capability.h>
 #endif	/* HAVE_SYS_CAPABILITY_H */
-#include <libpartclone.h>
+#include <libimage.h>
 #include <sysdep_posix.h>
 
 #ifndef	RUNDIR
@@ -184,8 +184,8 @@ nbd_connect(nbd_context_t *ncp, void *pctx)
 		/*
 		 * setup the nbd connection.
 		 */
-		ncp->svc_blocksize = partclone_blocksize(pctx);
-		ncp->svc_blockcount = partclone_blockcount(pctx);
+		ncp->svc_blocksize = image_blocksize(pctx);
+		ncp->svc_blockcount = image_blockcount(pctx);
 		ncp->svc_offsetmask = ncp->svc_blocksize - 1;
 		ncp->svc_blockmask = ~ncp->svc_offsetmask;
 		if ((ioctl(ncp->nbd_fh, NBD_CLEAR_SOCK) == -1) ||
@@ -456,10 +456,8 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 		    logmsg(ncp, 1, "NBD_WRITE0x%x@0x%x\n", length, offset);
 		    if (sboffs) {
 			/* partial leading block write, ech. */
-			if (!(error = partclone_seek(pctx, startblock))) {
-			    error = partclone_readblocks(pctx,
-							 readbuf,
-							 1);
+			if (!(error = image_seek(pctx, startblock))) {
+			    error = image_readblocks(pctx, readbuf, 1);
 			}
 		    } else {
 			error = 0;
@@ -468,14 +466,14 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 			if ((eboffs != ncp->svc_offsetmask) &&
 			    (blockcount != 1)) {
 			    /* partial trailing block write, double ech. */
-			    if (!(error = partclone_seek(pctx, startblock +
-							 blockcount - 1))) {
+			    if (!(error = image_seek(pctx, startblock +
+						     blockcount - 1))) {
 				error = 
-				    partclone_readblocks(pctx,
-							 readbuf + 
-							 ((blockcount - 1) * 
-							  ncp->svc_blocksize),
-							 1);
+				    image_readblocks(pctx,
+						     readbuf + 
+						     ((blockcount - 1) * 
+						      ncp->svc_blocksize),
+						     1);
 			    }
 			}
 			if (!error) {
@@ -489,14 +487,13 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 				   (!timetoleave))
 				;
 			    if (rlength == length) {
-				if (!(error = partclone_seek(pctx, 
-							     startblock)) &&
+				if (!(error = image_seek(pctx, startblock)) &&
 				    !(error = 
-				      partclone_writeblocks(pctx, 
-							    readbuf,
-							    blockcount))) {
+				      image_writeblocks(pctx, 
+							readbuf,
+							blockcount))) {
 				    logmsg(ncp, 2, 
-					   "NBD_WRITE partclone write success\n");
+					   "NBD_WRITE image write success\n");
 				} else {
 				    logmsg(ncp, 1,
 					   "NBD_WRITE: write fail %d\n", error);
@@ -524,14 +521,14 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 		    break;
 		case NBD_CMD_READ:
 		    logmsg(ncp, 1, "NBD_READ 0x%x@0x%x\n", length, offset);
-		    if (!(error = partclone_seek(pctx, startblock)) &&
-			!(error = partclone_readblocks(pctx, 
-						       readbuf,
-						       blockcount))) {
-			logmsg(ncp, 2, "NBD_READ partclone read success\n");
+		    if (!(error = image_seek(pctx, startblock)) &&
+			!(error = image_readblocks(pctx, 
+						   readbuf,
+						   blockcount))) {
+			logmsg(ncp, 2, "NBD_READ image read success\n");
 			replyappend = &readbuf[sboffs];
 		    } else {
-			logmsg(ncp, 2, "NBD_READ partclone read fail %d\n",
+			logmsg(ncp, 2, "NBD_READ image read fail %d\n",
 			       error);
 		    }
 		    break;
@@ -751,14 +748,13 @@ main(int argc, char *argv[])
 	/*
 	 * Open the image.
 	 */
-	if (!(error = partclone_open(file, cfile, 
-				     (nc.svc_rdonly) ? SYSDEP_OPEN_RO :
-				     SYSDEP_OPEN_RW,
-				     &posix_dispatch, &pctx))) {
+	if (!(error = image_open(file, cfile, 
+				 (nc.svc_rdonly) ? SYSDEP_OPEN_RO : SYSDEP_OPEN_RW,
+				 &posix_dispatch, &pctx))) {
 	    /*
 	     * Verify the image.
 	     */
-	    if (!(error = partclone_verify(pctx))) {
+	    if (!(error = image_verify(pctx))) {
 		nc.svc_progname= argv[0];
 		/*
 		 * Initialize the logger and check capabilities.
@@ -807,7 +803,7 @@ main(int argc, char *argv[])
 		fprintf(stderr, "%s: cannot verify: %s\n", file, 
 			strerror(error));
 	    }
-	    partclone_close(pctx);
+	    image_close(pctx);
 	} else {
 	    fprintf(stderr, "%s: cannot open: %s\n", file, strerror(error));
 	}

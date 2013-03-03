@@ -20,7 +20,6 @@
 #include <sysdep_int.h>
 
 #define	MAGIC_LEN	8
-#define	BLOCK_ERROR	-2
 
 int partclone_open(const char *path, const char *cfpath, 
 		   sysdep_open_mode_t omode, const sysdep_dispatch_t *sysdep,
