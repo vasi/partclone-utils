@@ -64,7 +64,7 @@ with type
 in read-write mode.  (Note that changes to the filesystem will be stored in
 /dir/image.cf)
 .nf
-.B "	imageclone -d /dev/nbd0 -f /dir/image -m /mountpoint -t fstype -w
+.B "	imagemount -d /dev/nbd0 -f /dir/image -m /mountpoint -t fstype -w
 .fi
 
 Use image
@@ -73,7 +73,7 @@ as network block device
 .B /dev/nbd0
 in read-only mode.
 .nf
-.B "	imageclone -d /dev/nbd0 -f /dir/image -r
+.B "	imagemount -d /dev/nbd0 -f /dir/image -r
 .fi
 .SH See Also
 .BR partclone(8)
