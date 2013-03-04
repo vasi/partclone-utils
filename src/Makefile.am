@@ -10,8 +10,8 @@
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
 #
-sbin_PROGRAMS = imagemount partclone_imageinfo
-noinst_PROGRAMS = libpctest
+sbin_PROGRAMS = imagemount partclone_imageinfo ntfsclone_imageinfo
+noinst_PROGRAMS = libpctest libntfstest
 
 noinst_HEADERS = sysdep_int.h sysdep_posix.h partclone.h libpartclone.h libntfsclone.h libimage.h changefile.h
 noinst_LIBRARIES = libntfsclone.a libpartclone.a libimage.a libchangefile.a libsysdep_posix.a 
@@ -25,5 +25,9 @@ imagemount_SOURCES = imagemount.c
 imagemount_LDADD = libimage.a libpartclone.a libntfsclone.a libchangefile.a libsysdep_posix.a 
 libpctest_SOURCES = libpctest.c
 libpctest_LDADD = libpartclone.a libchangefile.a libsysdep_posix.a
+libntfstest_SOURCES = libntfstest.c
+libntfstest_LDADD = libntfsclone.a libchangefile.a libsysdep_posix.a
 partclone_imageinfo_SOURCES = partclone_imageinfo.c
 partclone_imageinfo_LDADD = libpartclone.a libchangefile.a libsysdep_posix.a
+ntfsclone_imageinfo_SOURCES = ntfsclone_imageinfo.c
+ntfsclone_imageinfo_LDADD = libntfsclone.a libchangefile.a libsysdep_posix.a

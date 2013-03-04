@@ -334,8 +334,7 @@ v1_finish(pc_context_t *pcp)
 	    (void) (*pcp->pc_sysdep->sys_free)(v1p->v1_sumcount);
 	(void) (*pcp->pc_sysdep->sys_free)(v1p);
 	pcp->pc_flags &= ~PC_HAVE_VERDEP;
-	if (pcp->pc_cf_handle)
-	    error = cf_finish(pcp->pc_cf_handle);
+	error = (pcp->pc_cf_handle) ? cf_finish(pcp->pc_cf_handle) : 0;
     }
     return(error);
 }
@@ -366,8 +365,8 @@ v1_seek(pc_context_t *pcp, u_int64_t blockno)
 		v1p->v1_nvbcount++;
 	    }
 	}
-	if (pcp->pc_cf_handle)
-	    error = cf_seek(pcp->pc_cf_handle, blockno);
+	error = (pcp->pc_cf_handle) ? cf_seek(pcp->pc_cf_handle, blockno) : 0;
+	    
     }
     return(error);
 }

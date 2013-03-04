@@ -12,7 +12,7 @@
 .\"
 .TH imagemount 8 "$Date: 2010/07/18 13:45:42 $" "@PACKAGE_STRING@"
 .SH NAME
-imagemount \- Utility to mount a partclone-created image.
+imagemount \- Utility to mount an image created by partclone or ntfsclone.
 .SH SYNOPSIS
 imagemount -d nbd-dev -f image-file [-c change-file] 
 [-m mount-point [-t mount-type]] [-v verbose] [-Drw]

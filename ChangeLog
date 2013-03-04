@@ -1,3 +1,6 @@
+March 2012	Paul Park	paul@idealworldinc.com
+	Add ntfsclone generated image handling.
+	
 August 2011	Paul Park	paul@idealworldinc.com
 	Handle "iffy" images from partclone.  Specifically, handle
 	inconsistencies between the used block count in the header and the
