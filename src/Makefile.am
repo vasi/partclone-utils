@@ -13,7 +13,7 @@
 sbin_PROGRAMS = imagemount partclone_imageinfo ntfsclone_imageinfo
 noinst_PROGRAMS = libpctest libntfstest
 
-noinst_HEADERS = sysdep_int.h sysdep_posix.h partclone.h libpartclone.h libntfsclone.h libimage.h changefile.h
+noinst_HEADERS = sysdep_int.h sysdep_posix.h partclone.h libpartclone.h libntfsclone.h libimage.h changefile.h ntfsclone.h
 noinst_LIBRARIES = libntfsclone.a libpartclone.a libimage.a libchangefile.a libsysdep_posix.a 
 libntfsclone_a_SOURCES = libntfsclone.c
 libpartclone_a_SOURCES = libpartclone.c
