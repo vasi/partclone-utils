@@ -132,7 +132,7 @@ main(int argc, char *argv[])
 	       lastset--)
 	    ;
 	  if ((error = ntfsclone_seek(ntctx, lastset)) == 0) {
-1<	    if ((error = ntfsclone_readblocks(ntctx, iob, 1)) == 0) {
+	    if ((error = ntfsclone_readblocks(ntctx, iob, 1)) == 0) {
 	      off_t cpos, eofpos;
 
 	      cpos = lseek(*fd, 0, SEEK_CUR);
