@@ -240,10 +240,10 @@ v10_verify(nc_context_t *ntcp)
 		     SYSDEP_SEEK_ABSOLUTE, (u_int64_t *) NULL);
 
 		/*
-		 * See if we are handling the trailing cluster
+		 * We always handle the last cluster.
 		 */
-		if (trailing_cluster)
-		    ntcp->nc_head.nr_clusters++;
+		ntcp->nc_head.nr_clusters++;
+
 		/*
 		 * Alas, there is no bitmap in the image, so we have to go
 		 * and build it.
@@ -336,7 +336,17 @@ v10_seek(nc_context_t *ntcp, u_int64_t blockno)
 
     if (NTCTX_HAVE_VERDEP(ntcp)) {
 	v10_context_t *v10p = (v10_context_t *) ntcp->nc_verdep;
+	int trailing_cluster_in_image = 
+	    (VDT_MINOR(ntcp->nc_dispatch) >= 1) ? 1 : 0;
 	u_int64_t pbn, cbn;
+
+	/*
+	 * The trailing cluster "should" be the same as the first cluster.
+	 * If it's not in the image, then just magically redirect it.
+	 */
+	if (!trailing_cluster_in_image && 
+	    (blockno == ntcp->nc_head.nr_clusters))
+	    blockno = 0;
 
 	cbn = blockno >> v10p->v10_bucket_factor;
 	if (cbn != v10p->v10_current_bucket) {

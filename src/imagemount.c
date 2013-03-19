@@ -49,7 +49,7 @@
 /*
  * NTOHLL - ntohl for 64 bit values.
  */
-#define NTOHLL(value)	(ntohl(value >> 32) | ((uint64_t)ntohl(value) << 32))
+#define	NTOHLL(_x)	be64toh(_x)
 
 #ifdef	HAVE_SYS_CAPABILITY_H
 /*
