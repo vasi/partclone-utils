@@ -374,6 +374,13 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
      */
     create_pid_file(ncp, getpid(), &pidfile);
 
+    if (ncp->svc_mount) {
+        logmsg(ncp, 0, "Mount \"%s\" is ready.\n", ncp->svc_mount);
+        logmsg(ncp, 0, "When finished with the imagemount, run `umount %s` then `nbd-client -d %s to cleanup.\n", ncp->svc_mount, ncp->nbd_dev);
+    } else if (ncp->nbd_dev) {
+        logmsg(ncp, 0, "Device \"%s\" is now ready for further operations.\n", ncp->nbd_dev);
+        logmsg(ncp, 0, "When finished with the imagemount, run `nbd-client -d %s` to disconnect from the NBD server.\n", ncp->nbd_dev);
+    }
     /*
      * Do work until we're completely done.
      */
@@ -732,13 +739,16 @@ nbd_daemon_mode(nbd_context_t *ncp, void *pctx)
 {
     int error = 0;
 
-    if (ncp->svc_daemon_mode) {
-	if (daemon(0, 1) < 0) {
-	    error = errno;
-	    logmsg(ncp, -1, "%s: daemon failed: %s\n", ncp->svc_progname,
-		   strerror(error));
+	if (ncp->svc_daemon_mode) {
+		logmsg(ncp, 0, "Daemonizing process. Further log output will be written to the system log.\n");
+		if (daemon(0, 1) < 0) {
+			error = errno;
+			logmsg(ncp, -1, "%s: daemon failed: %s\n", ncp->svc_progname,
+			strerror(error));
+		} else {
+			logmsg(ncp, 0, "%s: Successfully daemonized.", ncp->svc_progname);
+        }
 	}
-    }
     return(error);
 }
 
@@ -781,6 +791,9 @@ main(int argc, char *argv[])
 	default: error = 1; break;
 	}
     }
+    if (nc.svc_daemon_mode) {
+        printf("Launched in daemon mode: All logging output being written to the system log.\n");
+    }
 
     /*
      * If successful, then do it!.
@@ -794,6 +807,7 @@ main(int argc, char *argv[])
 				 (nc.svc_rdonly) ? SYSDEP_OPEN_RO : SYSDEP_OPEN_RW,
 				 &posix_dispatch,
 				 nc.svc_raw_available, &pctx))) {
+		logmsg(&nc, 0, "Preparing \"%s\"...\n", file);
 	    /*
 	     * Set tolerant mode (if specified).
 	     */
@@ -839,6 +853,7 @@ main(int argc, char *argv[])
 			} else {
 			    logmsg(&nc, -1, "%s: cannot connect: %s\n", 
 				   nc.nbd_dev, strerror(error));
+			    logmsg(&nc, 0, "To disconnect a previous NBD device from the NBD server run: `nbd-client -d %s`\n", nc.nbd_dev);
 			}
 		    } else {
 			fprintf(stderr, "%s: cannot connect: %s\n", nc.nbd_dev,

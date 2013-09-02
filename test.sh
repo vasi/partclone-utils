@@ -153,7 +153,7 @@ go() {
         if [ "z$PROG" == "zpartclone-utils-imagemount" ]; then
             # Associate the partclone image with an nbd device in read-only mode,
             # to generate a raw block device of the underlying filesystem.
-            sudo src/imagemount -d $NBD -f $PARTCLONE_IMAGE
+            sudo src/imagemount -d $NBD -f $PARTCLONE_IMAGE >/dev/null 2>/dev/null
             if [ $? -ne 0 ]; then
                 ERROR_MESSAGE="imagemount reported error"
                 return 1
