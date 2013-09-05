@@ -663,6 +663,7 @@ partclone_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
 						   strlen(path)+1)) == 0) {
 		    pcp->pc_flags |= PC_HAVE_PATH;
 		    pcp->pc_omode = omode;
+		    memcpy(pcp->pc_path, path, strlen(path)+1);
 		    if (cfpath &&
 			((error = 
 			  (*pcp->pc_sysdep->sys_malloc)(&pcp->pc_cf_path,
