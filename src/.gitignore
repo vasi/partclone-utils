@@ -1,0 +1,12 @@
+.deps/
+imagemount
+libntfstest
+libpctest
+Makefile
+Makefile.in
+ntfsclone_imageinfo
+partclone_imageinfo
+cfchanges
+cfdump
+*.a
+*.o
