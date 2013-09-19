@@ -13,7 +13,7 @@ const sysdep_dispatch_t *sysdep = &posix_dispatch;
 
 void
 dump_header(char *n, cf_header_t *h) {
-    printf("%s: version %d, flags 0x%04x: blocks %lld used/%lld total\n",
+    printf("%s: version %d, flags 0x%04x: blocks %" PRIu64 " used/%" PRIu64 "total\n",
 	   n, h->cf_version, h->cf_flags, h->cf_used_blocks,
 	   h->cf_total_blocks);
 }
@@ -85,7 +85,7 @@ dump_blocks(cf_header_t *h, u_int64_t *bm, void *cf) {
     for (bi=0; bi<h->cf_total_blocks; bi++) {
 	if (bm[bi]) {
 	    int good = 0;
-	    printf("%lld: offset 0x%016llx: ", bi, bm[bi]);
+	    printf("%lu: offset 0x%016lx: ", bi, bm[bi]);
 	    nfound++;
 	    if (bsize == 0) {
 		for (bsize = 512; bsize < (128*1024*1024); bsize *= 2) {
@@ -127,7 +127,7 @@ dump_blocks(cf_header_t *h, u_int64_t *bm, void *cf) {
 	}
     }
     if (h->cf_used_blocks != nfound) {
-	printf("WARNING: %lld found, %lld used blocks\n", nfound, 
+	printf("WARNING: %lu found, %" PRIu64 " used blocks\n", nfound, 
 	       h->cf_used_blocks);
     }
 }

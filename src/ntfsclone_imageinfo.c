@@ -13,6 +13,7 @@
 #ifdef	HAVE_CONFIG_H
 #include <config.h>
 #endif	/* HAVE_CONFIG_H */
+#include <inttypes.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -110,7 +111,7 @@ main(int argc, char *argv[])
 	  }
 	  bmscanned++;
 	}
-	fprintf(stdout, "%s: %lld blocks, %lld blocks scanned, %lld unset, %lld set, %lld strange\n",
+	fprintf(stdout, "%s: %" PRId64 " blocks, %" PRIu64 " blocks scanned, %" PRIu64 " unset, %" PRIu64 " set, %" PRIu64 " strange\n",
 		argv[i], p->nc_head.nr_clusters, bmscanned, unset, set, strange);
 	if ((iob = (unsigned char *) malloc(ntfsclone_blocksize(ntctx)))) {
 	  int *fd = (int *) p->nc_fd;
@@ -141,23 +142,23 @@ main(int argc, char *argv[])
 		fprintf(stdout, "%s: read last block at end of file\n",
 			argv[i]);
 	      } else {
-		fprintf(stderr, "%s: position after last block = %lld, eof position = %lld, blocksize = %lld\n",
+		fprintf(stderr, "%s: position after last block = %ld, eof position = %ld, blocksize = %" PRIu64 "\n",
 			argv[i], cpos, eofpos, ntfsclone_blocksize(ntctx));
 		anomalies++;
 	      }
 	    } else {
-	      fprintf(stderr, "%s: cannot read block %lld, error = %d\n",
+	      fprintf(stderr, "%s: cannot read block %" PRIu64 ", error = %d\n",
 		      argv[i], lastset, error);
 	      anomalies++;
 	    }
 	  } else {
-	    fprintf(stderr, "%s: cannot seek to block %lld, error = %d\n",
+	    fprintf(stderr, "%s: cannot seek to block %" PRIu64 ", error = %d\n",
 		    argv[i], lastset, error);
 	    anomalies++;
 	  }
 	  free(iob);
 	} else {
-	  fprintf(stderr, "%s: cannot malloc %lld bytes\n", argv[i],
+	  fprintf(stderr, "%s: cannot malloc %" PRId64 " bytes\n", argv[i],
 		  ntfsclone_blocksize(ntctx));
 	  anomalies++;
 	}

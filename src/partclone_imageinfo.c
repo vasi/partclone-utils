@@ -13,6 +13,7 @@
 #ifdef	HAVE_CONFIG_H
 #include <config.h>
 #endif	/* HAVE_CONFIG_H */
+#include <inttypes.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -69,14 +70,14 @@ main(int argc, char *argv[])
 	  default:
 	    strange++;
 	    laststrange = bmi;
-	    fprintf(stderr, "%s: block %lld (0x%016llx) bitmap %d (0x%02x)?\n", argv[i], bmi, bmi,
+	    fprintf(stderr, "%s: block %lu (0x%016lx) bitmap %d (0x%02x)?\n", argv[i], bmi, bmi,
 		    v->v1_bitmap[bmi], v->v1_bitmap[bmi]);
 	    anomalies++;
 	    break;
 	  }
 	  bmscanned++;
 	}
-	fprintf(stdout, "%s: %lld blocks, %lld blocks scanned, %lld unset, %lld set, %lld strange\n",
+	fprintf(stdout, "%s: %llu blocks, %" PRIu64 " blocks scanned, %" PRIu64 " unset, %" PRIu64 " set, %" PRIu64 " strange\n",
 		argv[i], p->pc_head.totalblock, bmscanned, unset, set, strange);
 	if ((iob = (unsigned char *) malloc(partclone_blocksize(pctx)))) {
 	  int *fd = (int *) p->pc_fd;
@@ -92,10 +93,9 @@ main(int argc, char *argv[])
 	  fprintf(stdout, "%s: size is %lld bytes, blocks (%lld bytes) start at %lld: ",
 		  argv[i], (long long) fsize, (long long) partclone_blocksize(pctx), (long long) sblkpos);
 	  fsize -= sblkpos;
-	  fprintf(stdout, " %d blocks written",
-		  fsize / (partclone_blocksize(pctx) + CRC_SIZE));
+	  fprintf(stdout, " %ld blocks written", fsize / (partclone_blocksize(pctx) + CRC_SIZE));
 	  if (fsize % (partclone_blocksize(pctx) + CRC_SIZE)) {
-	    fprintf(stdout, ": %d byte trailer\n", fsize % (partclone_blocksize(pctx) + CRC_SIZE));
+	    fprintf(stdout, ": %ld byte trailer\n", fsize % (partclone_blocksize(pctx) + CRC_SIZE));
 	  } else {
 	    fprintf(stdout, "\n");
 	  }
@@ -109,23 +109,23 @@ main(int argc, char *argv[])
 		fprintf(stdout, "%s: read last block at end of file\n",
 			argv[i]);
 	      } else {
-		fprintf(stderr, "%s: position after last block = %lld, eof position = %lld, blocksize = %lld\n",
+		fprintf(stderr, "%s: position after last block = %ld, eof position = %ld, blocksize = %ld\n",
 			argv[i], cpos, eofpos, partclone_blocksize(pctx) + CRC_SIZE);
 		anomalies++;
 	      }
 	    } else {
-	      fprintf(stderr, "%s: cannot read block %lld, error = %d\n",
+	      fprintf(stderr, "%s: cannot read block %" PRIu64 ", error = %d\n",
 		      argv[i], lastset, error);
 	      anomalies++;
 	    }
 	  } else {
-	    fprintf(stderr, "%s: cannot seek to block %lld, error = %d\n",
+	    fprintf(stderr, "%s: cannot seek to block %" PRIu64 ", error = %d\n",
 		    argv[i], lastset, error);
 	    anomalies++;
 	  }
 	  free(iob);
 	} else {
-	  fprintf(stderr, "%s: cannot malloc %lld bytes\n", argv[i],
+	  fprintf(stderr, "%s: cannot malloc %" PRId64 " bytes\n", argv[i],
 		  partclone_blocksize(pctx));
 	  anomalies++;
 	}
