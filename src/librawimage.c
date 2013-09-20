@@ -15,9 +15,9 @@
 #endif	/* HAVE_CONFIG_H */
 #include <errno.h>
 #include <string.h>
-#include <changefile.h>
-#include <librawimage.h>
-#include <libimage.h>
+#include "changefile.h"
+#include "librawimage.h"
+#include "libimage.h"
 
 static const char cf_trailer[] = ".cf";
 

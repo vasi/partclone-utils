@@ -14,7 +14,7 @@
 #ifndef	_LIBIMAGE_H_
 #define	_LIBIMAGE_H_	1
 #include <sys/types.h>
-#include <sysdep_int.h>
+#include "sysdep_int.h"
 
 #define	BLOCK_ERROR	-2
 

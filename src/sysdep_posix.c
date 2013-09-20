@@ -14,7 +14,7 @@
  *
  */
 #ifdef	HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif	/* HAVE_CONFIG_H */
 #include <sys/types.h>
 #include <unistd.h>
@@ -22,7 +22,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <sysdep_posix.h>
+#include "sysdep_posix.h"
 
 /*
  * posix_open	- Open a file handle and return a pointer to it.

@@ -5,9 +5,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
-#include <sysdep_int.h>
-#include <sysdep_posix.h>
-#include <changefileint.h>
+#include "sysdep_int.h"
+#include "sysdep_posix.h"
+#include "changefileint.h"
 
 const sysdep_dispatch_t *sysdep = &posix_dispatch;
 

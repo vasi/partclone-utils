@@ -12,10 +12,10 @@
  */
 #include <stdlib.h>
 #include <errno.h>
-#include <libimage.h>
-#include <libntfsclone.h>
-#include <libpartclone.h>
-#include <librawimage.h>
+#include "libimage.h"
+#include "libntfsclone.h"
+#include "libpartclone.h"
+#include "librawimage.h"
 
 extern image_dispatch_t partclone_image_type;
 extern image_dispatch_t ntfsclone_image_type;

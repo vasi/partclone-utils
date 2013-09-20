@@ -14,7 +14,7 @@
 #ifndef	_CHANGEFILE_H_
 #define	_CHANGEFILE_H_	1
 #include <sys/types.h>
-#include <sysdep_int.h>
+#include "sysdep_int.h"
 int cf_init(const char *, const sysdep_dispatch_t *, u_int64_t, u_int64_t,
 	    void **);
 int cf_create(const char *, const sysdep_dispatch_t *, u_int64_t, u_int64_t,

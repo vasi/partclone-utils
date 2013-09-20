@@ -14,7 +14,7 @@
  *
  */
 #ifdef	HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif	/* HAVE_CONFIG_H */
 #include <stdarg.h>
 #include <stdlib.h>
@@ -36,8 +36,8 @@
 #ifdef	HAVE_SYS_CAPABILITY_H
 #include <sys/capability.h>
 #endif	/* HAVE_SYS_CAPABILITY_H */
-#include <libimage.h>
-#include <sysdep_posix.h>
+#include "libimage.h"
+#include "sysdep_posix.h"
 
 #ifndef	RUNDIR
 #define	RUNDIR	"/var/run"

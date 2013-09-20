@@ -14,14 +14,14 @@
  *
  */
 #ifdef	HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif	/* HAVE_CONFIG_H */
 #include <errno.h>
 #include <string.h>
-#include <changefile.h>
-#include <partclone.h>
-#include <libpartclone.h>
-#include <libimage.h>
+#include "changefile.h"
+#include "partclone.h"
+#include "libpartclone.h"
+#include "libimage.h"
 
 static const char cf_trailer[] = ".cf";
 

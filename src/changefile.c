@@ -13,12 +13,12 @@
  * Copyright (c) 2011, Ideal World, Inc.  All Rights Reserved.
  */
 #ifdef	HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif	/* HAVE_CONFIG_H */
 #include <errno.h>
 #include <string.h>
-#include <changefile.h>
-#include <changefileint.h>
+#include "changefile.h"
+#include "changefileint.h"
 
 /*
  * String to append to path to create a change file when none is specified.
