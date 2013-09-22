@@ -199,8 +199,8 @@ nbd_connect(nbd_context_t *ncp, void *pctx)
 		if (ncp->nbd_timeout >= 0) {
 		    if (ioctl(ncp->nbd_fh, NBD_SET_TIMEOUT, ncp->nbd_timeout) == -1) {
 		         error = errno;
-		         logmsg(ncp, 2, "nbd_connect: ioctl NBD_SET_TIMEOUT fail with %d\n",
-			        error);
+		         logmsg(ncp, 2, "nbd_connect: ioctl NBD_SET_TIMEOUT fail with %d (%s)\n",
+			        error, strerror(error));
 		    }
 		    logmsg(ncp, 1, "NBD_TIMEOUT %d\n", ncp->nbd_timeout);
 		}
@@ -211,8 +211,8 @@ nbd_connect(nbd_context_t *ncp, void *pctx)
 		    (ioctl(ncp->nbd_fh, NBD_SET_SIZE_BLOCKS, 
 			   ncp->svc_blockcount) == -1)) {
 		    error = errno;
-		    logmsg(ncp, 2, "nbd_connect: ioctl chain fail with %d\n",
-			   error);
+		    logmsg(ncp, 2, "nbd_connect: ioctl chain fail with %d (%s)\n",
+			   error, strerror(error));
 		} else {
 		    switch (fork()) {
 		    case -1:
@@ -226,8 +226,8 @@ nbd_connect(nbd_context_t *ncp, void *pctx)
 			    error = errno;
 			    logmsg(ncp, 2, 
 				   "nbd_connect: child: ioctl DOIT fail "
-				   "with %d\n",
-				   error);
+				   "with %d (%s)\n",
+				   error, strerror(error));
 			}
 			logmsg(ncp, 2, "nbd_connect: child: DOIT done\n");
 			close(ncp->nbd_fh);
@@ -244,15 +244,18 @@ nbd_connect(nbd_context_t *ncp, void *pctx)
 		    }
 		}
 	    } else {
-		logmsg(ncp, 2, "nbd_connect: nbdev_open fail with %d\n", error);
+		logmsg(ncp, 2, "nbd_connect: nbdev_open fail with %d (%s)\n",
+		       error, strerror(error));
 	    }
 	} else {
 	    error = errno;
-	    logmsg(ncp, 2, "nbd_connect: socketpair fail with %d\n", error);
+	    logmsg(ncp, 2, "nbd_connect: socketpair fail with %d (%s)\n",
+		   error, strerror(error));
 	}
     }
     if (error)
-	logmsg(ncp, 1, "nbd_connect: fail with %d\n", error);
+	logmsg(ncp, 1, "nbd_connect: fail with %d (%s)\n",
+	       error, strerror(error));
     return(error);
 }
 
@@ -263,7 +266,8 @@ static void
 nbd_disconnect(nbd_context_t *ncp, void *pctx)
 {
     if (ioctl(ncp->nbd_fh, NBD_DISCONNECT) == -1) {
-	logmsg(ncp, 1, "nbd_disconnect: fail with %d\n", errno);
+	logmsg(ncp, 1, "nbd_disconnect: fail with %d (%s)\n",
+	       errno, strerror(errno));
     } else {
 	logmsg(ncp, 2, "nbd_disconnect\n");
     }
@@ -526,8 +530,8 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 					    );
 				    } else {
 					logmsg(ncp, 1,
-					       "NBD_WRITE: write fail %d\n",
-					       error);
+					       "NBD_WRITE: write fail %d (%s)\n",
+					       error, strerror(error));
 				    }
 				} else {
 				    if (rlength >= 0) {
@@ -536,20 +540,20 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 				    } else {
 					error = errno;
 					logmsg(ncp, 1,
-					       "NBD_WRITE fail: read fail %d\n",
-					       error);
+					       "NBD_WRITE fail: read fail %d (%s)\n",
+					       error, strerror(error));
 				    }
 				}
 				remlen -= rlength;
 				rembp += rlength;
 			    }
 			} else {
-			    logmsg(ncp, 1, "NBD_WRITE: priming read fail %d\n",
-				   error);
+			    logmsg(ncp, 1, "NBD_WRITE: priming read fail %d (%s)\n",
+				   error, strerror(error));
 			}
 		    } else {
-			logmsg(ncp, 1, "NBD_WRITE: lead priming read fail %d\n",
-			       error);
+			logmsg(ncp, 1, "NBD_WRITE: lead priming read fail %d (%s)\n",
+			       error, strerror(error));
 		    }
 		    break;
 		case NBD_CMD_READ:
@@ -561,8 +565,8 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 			logmsg(ncp, 2, "NBD_READ image read success\n");
 			replyappend = &readbuf[sboffs];
 		    } else {
-			logmsg(ncp, 2, "NBD_READ image read fail %d\n",
-			       error);
+			logmsg(ncp, 2, "NBD_READ image read fail %d (%s)\n",
+			       error, strerror(error));
 		    }
 		    break;
 		default:

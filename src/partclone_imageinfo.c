@@ -114,13 +114,13 @@ main(int argc, char *argv[])
 		anomalies++;
 	      }
 	    } else {
-	      fprintf(stderr, "%s: cannot read block %" PRIu64 ", error = %d\n",
-		      argv[i], lastset, error);
+	      fprintf(stderr, "%s: cannot read block %" PRIu64 ", error(%d) = %s\n",
+		      argv[i], lastset, error, strerror(error));
 	      anomalies++;
 	    }
 	  } else {
-	    fprintf(stderr, "%s: cannot seek to block %" PRIu64 ", error = %d\n",
-		    argv[i], lastset, error);
+	    fprintf(stderr, "%s: cannot seek to block %" PRIu64 ", error(%d) = %s\n",
+		    argv[i], lastset, error, strerror(error));
 	    anomalies++;
 	  }
 	  free(iob);
@@ -130,11 +130,13 @@ main(int argc, char *argv[])
 	  anomalies++;
 	}
       } else {
-	fprintf(stderr, "%s: cannot verify image (error = %d)\n", argv[i], error);
+	fprintf(stderr, "%s: cannot verify image (error(%d) = %s)\n",
+		argv[i], error, strerror(error));
 	anomalies++;
       }
     } else {
-      fprintf(stderr, "%s: cannot open image (error = %d)\n", argv[i], error);
+      fprintf(stderr, "%s: cannot open image (error(%d) = %s)\n",
+	      argv[i], error, strerror(error));
       anomalies++;
     }
     if (anomalies) {
