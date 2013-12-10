@@ -22,6 +22,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
+AM_PROG_AR
 
 # Checks for libraries.
 AC_CHECK_LIB([cap], [cap_init])

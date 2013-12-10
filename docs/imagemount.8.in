@@ -15,7 +15,7 @@
 imagemount \- Utility to mount an image created by partclone or ntfsclone.
 .SH SYNOPSIS
 imagemount -d nbd-dev -f image-file [-c change-file] 
-[-m mount-point [-t mount-type]] [-v verbose] [-Drw]
+[-m mount-point [-t mount-type]] [-v verbose] [-DrwT]
 .SH DESCRIPTION
 .B imagemount
 creates network block devices from images created by
@@ -52,6 +52,9 @@ Enable read-only mode.
 .B -w
 Enable write to image (if change file not specified, then changes are
 stored in IMAGE-FILE.cf)
+.TP
+.B -T
+Enable 'tolerant' mode.  Try to make the best of what data is present.
 .SH Examples
 Mount image 
 .B /dir/image
