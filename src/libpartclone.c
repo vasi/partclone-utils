@@ -43,6 +43,7 @@ struct change_file_context;
 #define	PC_HAVE_PATH	0x2000		/* Path string allocated */
 #define	PC_HAVE_CF_PATH	0x4000		/* Path string allocated */
 #define	PC_VALID	0x8000		/* Header is valid */
+#define	PC_TOLERANT	0x40000		/* Open in tolerant mode */
 #define	PC_READ_ONLY	0x80000		/* Open read only */
 typedef struct libpc_context {
     void		*pc_fd;		/* File handle */
@@ -68,6 +69,7 @@ typedef struct libpc_context {
 					  == ((_f)|PC_VALID)))
 #define	PCTX_VALID(_p)		PCTX_FLAGS_SET(_p, 0)
 #define	PCTX_OPEN(_p)		PCTX_FLAGS_SET(_p, PC_OPEN)
+#define	PCTX_TOLERANT(_p)	PCTX_FLAGS_SET(_p, PC_TOLERANT)
 #define	PCTX_READ_ONLY(_p)	(((_p)->pc_flags & PC_READ_ONLY) == \
 				 PC_READ_ONLY)
 #define	PCTX_CF_OPEN(_p)	PCTX_FLAGS_SET(_p, PC_CF_OPEN)
@@ -285,15 +287,16 @@ v1_verify(pc_context_t *pcp)
 				 * to get a definitive count of used blocks
 				 * without scanning the entire bitmap.  So
 				 * some filesystems use a derived count, which
-				 * can be off.  So, we don't turn on
-				 * STRICT_HEADERS (for now).
+				 * can be off. 
+				 * [2013-12]
+				 * If we're tolerant, fix it.  Otherwise, gripe.
 				 */
-#ifdef	STRICT_HEADERS
-				error = EFAULT;
-#else	/* STRICT_HEADERS */
-				/* what?! - Fix it up silently. */
-				pcp->pc_head.usedblocks = nset;
-#endif	/* STRICT_HEADERS */
+				if (PCTX_TOLERANT(pcp)) {
+				    /* what?! - Fix it up silently. */
+				    pcp->pc_head.usedblocks = nset;
+				} else {
+				    error = EFAULT;
+				}
 			    } 
 			    if (!error && pcp->pc_cf_handle) {
 				/*
@@ -647,6 +650,19 @@ partclone_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
 }
 
 /*
+ * partclone_tolerant_mode	- Set tolerant mode
+ */
+void
+partclone_tolerant_mode(void *rp)
+{
+    pc_context_t *pcp = (pc_context_t *) rp;
+
+    if (PCTX_OPEN(pcp)) {
+	pcp->pc_flags |= PC_TOLERANT;
+    }
+}
+
+/*
  * partclone_verify	- Determine the version of the file and verify it.
  */
 int
@@ -890,6 +906,7 @@ const image_dispatch_t partclone_image_type = {
     partclone_probe,
     partclone_open,
     partclone_close,
+    partclone_tolerant_mode,
     partclone_verify,
     partclone_blocksize,
     partclone_blockcount,

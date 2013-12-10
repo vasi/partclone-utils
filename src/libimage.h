@@ -28,6 +28,7 @@ typedef struct image_type_dispatch {
 		sysdep_open_mode_t omode, const sysdep_dispatch_t *sysdep,
 		void **rpp);
     int (*close)(void *rp);
+    void (*tolerant_mode)(void *rp);
     int (*verify)(void *rp);
     int64_t (*blocksize)(void *rp);
     int64_t (*blockcount)(void *rp);

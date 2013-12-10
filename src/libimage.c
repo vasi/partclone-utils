@@ -49,8 +49,8 @@ image_open(const char *path, const char *cfpath,
 	if (!(error = (*sysdep->sys_malloc)(rpp, sizeof(image_handle_t)))) {
 	    image_handle_t *ihp = (image_handle_t *) *rpp;
 	    ihp->i_magic = IMAGE_MAGIC;
-	    ihp->i_sysdep = sysdep;
-	    ihp->i_dispatch = known_types[itidx];
+	    ihp->i_sysdep = (sysdep_dispatch_t *) sysdep;
+	    ihp->i_dispatch = (image_dispatch_t *) known_types[itidx];
 	    error = (*ihp->i_dispatch->open)(path, cfpath, omode, sysdep,
 					     &ihp->i_type_handle);
 	}
@@ -68,6 +68,15 @@ image_close(void *rp)
 	(void) (ihp->i_sysdep->sys_free)(ihp);
     }
     return(error);
+}
+
+void
+image_tolerant_mode(void *rp)
+{
+    image_handle_t *ihp = (image_handle_t *) rp;
+    if (ihp && (ihp->i_magic == IMAGE_MAGIC)) {
+	(*ihp->i_dispatch->tolerant_mode)(ihp->i_type_handle);
+    }
 }
 
 int

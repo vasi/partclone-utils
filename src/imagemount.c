@@ -72,6 +72,7 @@ typedef struct nbd_context {
     int		svc_verbose;
     int		svc_daemon_mode;
     int		svc_rdonly;
+    int		svc_tolerant;
     u_int64_t	svc_blocksize;
     u_int64_t	svc_blockcount;
     u_int64_t	svc_offsetmask;
@@ -726,7 +727,7 @@ main(int argc, char *argv[])
     /*
      * Parse options.
      */
-    while ((option = getopt(argc, argv, "c:d:f:v:m:t:Drw")) != -1) {
+    while ((option = getopt(argc, argv, "c:d:f:v:m:t:DrwT")) != -1) {
 	switch (option) {
 	case 'c': cfile = optarg; break;
 	case 'd': nc.nbd_dev = optarg; break;
@@ -737,6 +738,7 @@ main(int argc, char *argv[])
 	case 'D': nc.svc_daemon_mode = !nc.svc_daemon_mode; break;
 	case 'r': nc.svc_rdonly = 1; break;
 	case 'w': nc.svc_rdonly = 0; break;
+	case 'T': nc.svc_tolerant = !nc.svc_tolerant; break;
 	default: error = 1; break;
 	}
     }
@@ -752,6 +754,12 @@ main(int argc, char *argv[])
 	if (!(error = image_open(file, cfile, 
 				 (nc.svc_rdonly) ? SYSDEP_OPEN_RO : SYSDEP_OPEN_RW,
 				 &posix_dispatch, &pctx))) {
+	    /*
+	     * Set tolerant mode (if specified).
+	     */
+	    if (nc.svc_tolerant) {
+		image_tolerant_mode(pctx);
+	    }
 	    /*
 	     * Verify the image.
 	     */

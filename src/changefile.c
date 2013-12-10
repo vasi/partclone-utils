@@ -138,7 +138,9 @@ cf_verify(void *vcp)
 	 */
 	if ((cfp->cfc_header.cf_magic == CF_MAGIC_1) &&
 	    (cfp->cfc_header.cf_magic2 == CF_MAGIC_2) &&
-	    (cfp->cfc_header.cf_total_blocks == cfp->cfc_blockcount)) {
+	    /* [2013-12] ntfs chicanery could have added the trailing block */
+	    ((cfp->cfc_header.cf_total_blocks == cfp->cfc_blockcount) ||
+	     (cfp->cfc_header.cf_total_blocks == (cfp->cfc_blockcount+1)))) {
 	    u_int64_t bhsize = cfp->cfc_header.cf_total_blocks *
 		sizeof(*cfp->cfc_blockmap);
 	    /*

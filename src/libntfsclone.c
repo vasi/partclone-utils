@@ -43,6 +43,7 @@ struct change_file_context;
 #define	NC_HAVE_PATH	0x2000		/* Path string allocated */
 #define	NC_HAVE_CF_PATH	0x4000		/* Path string allocated */
 #define	NC_VALID	0x8000		/* Header is valid */
+#define	NC_TOLERANT	0x4000		/* Open in tolerant mode */
 #define	NC_READ_ONLY	0x80000		/* Open read only */
 typedef struct libntfsclone_context {
     void		*nc_fd;		/* File handle */
@@ -68,6 +69,7 @@ typedef struct libntfsclone_context {
 					  == ((_f)|NC_VALID)))
 #define	NTCTX_VALID(_p)		NTCTX_FLAGS_SET(_p, 0)
 #define	NTCTX_OPEN(_p)		NTCTX_FLAGS_SET(_p, NC_OPEN)
+#define	NTCTX_TOLERANT(_p)	NTCTX_FLAGS_SET(_p, NC_TOLERANT)
 #define	NTCTX_READ_ONLY(_p)	(((_p)->nc_flags & NC_READ_ONLY) == \
 				 NC_READ_ONLY)
 #define	NTCTX_CF_OPEN(_p)	NTCTX_FLAGS_SET(_p, NC_CF_OPEN)
@@ -175,7 +177,7 @@ v10_init(nc_context_t *ntcp)
 		((int) ntcp->nc_omode >= (int) SYSDEP_OPEN_RW) &&
 		((error = cf_init(ntcp->nc_cf_path, ntcp->nc_sysdep,
 				  ntcp->nc_head.cluster_size,
-				  ntcp->nc_head.nr_clusters,
+				  ntcp->nc_head.nr_clusters + 1, /* for trailing cluster */
 				  &ntcp->nc_cf_handle)) == 0)) {
 		ntcp->nc_flags |= NC_CF_OPEN;
 	    } else {
@@ -205,7 +207,6 @@ v10_verify(nc_context_t *ntcp)
     int error = EINVAL;
 
     if (NTCTX_OPEN(ntcp)) {
-	int trailing_cluster = (VDT_MINOR(ntcp->nc_dispatch) >= 1) ? 1 : 0;
 	/*
 	 * Verify the header magic.
 	 */
@@ -226,6 +227,7 @@ v10_verify(nc_context_t *ntcp)
 		   ((ntcp->nc_head.nr_clusters >> 
 		     v10p->v10_bucket_factor)+1) * sizeof(u_int64_t))) == 0)) {
 		u_int64_t cclust;
+		int nconsecsync;
 
 		memset(v10p->v10_bitmap, 0, bmlen);
 		memset(v10p->v10_bucket_offset, 0,
@@ -249,6 +251,7 @@ v10_verify(nc_context_t *ntcp)
 		 * and build it.
 		 */
 		cclust = 0;
+		nconsecsync = 0;
 		while (!error && (cclust < ntcp->nc_head.nr_clusters)) {
 		    ntfsclone_atom_t ibuf;
 		    u_int64_t rsize, iclust, cfoffs;
@@ -263,9 +266,11 @@ v10_verify(nc_context_t *ntcp)
 			== 0) {
 			switch (ibuf.nca_atype) {
 			case 0:	/* empty cluster */
+			    nconsecsync = 0;
 			    cclust += ibuf.nca_union.ncau_empty_count;
 			    break;
 			case 1: /* used cluster */
+			    nconsecsync = 0;
 			    if ((error = (*ntcp->nc_sysdep->sys_seek)
 				 (ntcp->nc_fd,
 				  ntcp->nc_head.cluster_size -
@@ -286,12 +291,41 @@ v10_verify(nc_context_t *ntcp)
 					ATOM_TO_DATA_OFFSET;
 				}
 				cclust++;
+			    } else {
+				if (NTCTX_TOLERANT(ntcp)) {
+				    error = 0;
+				    cclust = ntcp->nc_head.nr_clusters;
+				}
 			    }
 			    break;
 			default:
-			    error = EDEADLK;
+			    if (NTCTX_TOLERANT(ntcp)) {
+				error = 0;
+				if (nconsecsync > 128) {
+				    cclust = ntcp->nc_head.nr_clusters;
+				} else {	
+				    nconsecsync++;
+				}
+			    } else {
+				error = EDEADLK;
+			    }
 			    break;
 			}
+		    } else {
+			if (NTCTX_TOLERANT(ntcp)) {
+			    u_int64_t discpos;
+			    (void) (*ntcp->nc_sysdep->sys_seek)
+				(ntcp->nc_fd, sizeof(ibuf), 
+				 SYSDEP_SEEK_RELATIVE, &discpos);
+			    cclust++;
+			    error = 0;
+			}
+		    }
+		}
+		if (!error && ntcp->nc_cf_handle) {
+		    error = cf_verify(ntcp->nc_cf_handle);
+		    if (!error) {
+			ntcp->nc_flags |= NC_CF_VERIFIED;
 		    }
 		}
 	    }
@@ -357,8 +391,9 @@ v10_seek(nc_context_t *ntcp, u_int64_t blockno)
 	    v10p->v10_bsfcount = 0;
 	    pbn = cbn << v10p->v10_bucket_factor;
 	    for (v10p->v10_bsfcount = 0;
-		 bitmap_bit_value(v10p->v10_bitmap, pbn + v10p->v10_bsfcount) 
-		     == 0;
+		 ((bitmap_bit_value(v10p->v10_bitmap, pbn + v10p->v10_bsfcount) 
+		   == 0) &&
+		  ((pbn + v10p->v10_bsfcount) < blockno));
 		 v10p->v10_bsfcount++)
 		;
 	    v10p->v10_current_bucket = cbn;
@@ -570,8 +605,8 @@ version_table[] = {
       v10_init, v10_verify, v10_finish, v10_seek, v10_readblock, 
       v10_blockused, v10_writeblock, v10_sync },
     { VDT_VERSION_KEY(10, 0), 	/* version 10.0 */
-      v10_init, v10_verify, v10_finish, v10_seek, v10_readblock, v10_blockused,
-      v10_writeblock, v10_sync },
+      v10_init, v10_verify, v10_finish, v10_seek, v10_readblock, 
+      v10_blockused, v10_writeblock, v10_sync },
 };
 
 /*
@@ -661,10 +696,23 @@ ntfsclone_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
 }
 
 /*
+ * ntfsclone_tolerant_mode	- Set tolerant mode
+ */
+void
+ntfsclone_tolerant_mode(void *rp)
+{
+    nc_context_t *ntcp = (nc_context_t *) rp;
+
+    if (NTCTX_OPEN(ntcp)) {
+	ntcp->nc_flags |= NC_TOLERANT;
+    }
+}
+
+/*
  * ntfsclone_verify	- Determine the version of the file and verify it.
  */
-int
-ntfsclone_verify(void *rp)
+static int
+ntfsclone_verify_common(void *rp, int full)
 {
     int error = EINVAL;
     nc_context_t *ntcp = (nc_context_t *) rp;
@@ -708,7 +756,7 @@ ntfsclone_verify(void *rp)
 		/*
 		 * Initialize the per-version handle.
 		 */
-		if (!(error = (*ntcp->nc_dispatch->version_init)(ntcp))) {
+		if (full && !(error = (*ntcp->nc_dispatch->version_init)(ntcp))) {
 		    /*
 		     * Verify the version header.
 		     */
@@ -741,6 +789,18 @@ ntfsclone_verify(void *rp)
 	}
     }
     return(error);
+}
+
+static int
+ntfsclone_verify_header_only(void *rp)
+{
+    return(ntfsclone_verify_common(rp, 0));
+}
+
+int
+ntfsclone_verify(void *rp)
+{
+    return(ntfsclone_verify_common(rp, 1));
 }
 
 /*
@@ -883,7 +943,7 @@ ntfsclone_probe(const char *path, const sysdep_dispatch_t *sysdep)
     int error = ntfsclone_open(path, (char *) NULL, SYSDEP_OPEN_RO,
 			       sysdep, &testh);
     if (!error) {
-	error = ntfsclone_verify(testh);
+	error = ntfsclone_verify_header_only(testh);
 	ntfsclone_close(testh);
     }
     return(error);
@@ -897,6 +957,7 @@ const image_dispatch_t ntfsclone_image_type = {
     ntfsclone_probe,
     ntfsclone_open,
     ntfsclone_close,
+    ntfsclone_tolerant_mode,
     ntfsclone_verify,
     ntfsclone_blocksize,
     ntfsclone_blockcount,
