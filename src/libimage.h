@@ -44,9 +44,10 @@ typedef struct image_type_dispatch {
  * Our interface to everybody else.
  */
 int image_open(const char *path, const char *cfpath, 
-		   sysdep_open_mode_t omode, const sysdep_dispatch_t *sysdep,
-		   void **rpp);
+	       sysdep_open_mode_t omode, const sysdep_dispatch_t *sysdep,
+	       int raw_allowed, void **rpp);
 int image_close(void *rp);
+void image_tolerant_mode(void *rp);
 int image_verify(void *rp);
 int64_t image_blocksize(void *rp);
 int64_t image_blockcount(void *rp);

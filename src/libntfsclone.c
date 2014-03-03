@@ -174,12 +174,18 @@ v10_init(nc_context_t *ntcp)
 	    ntcp->nc_flags |= (NC_HAVE_VERDEP|NC_VERSION_INIT);
 
 	    if (ntcp->nc_cf_path && 
-		((int) ntcp->nc_omode >= (int) SYSDEP_OPEN_RW) &&
-		((error = cf_init(ntcp->nc_cf_path, ntcp->nc_sysdep,
-				  ntcp->nc_head.cluster_size,
-				  ntcp->nc_head.nr_clusters + 1, /* for trailing cluster */
-				  &ntcp->nc_cf_handle)) == 0)) {
-		ntcp->nc_flags |= NC_CF_OPEN;
+		((int) ntcp->nc_omode >= (int) SYSDEP_OPEN_RW)) {
+		if ((error = cf_init(ntcp->nc_cf_path, ntcp->nc_sysdep,
+				     ntcp->nc_head.cluster_size,
+				     ntcp->nc_head.nr_clusters + 1, /* for trailing cluster */
+				     &ntcp->nc_cf_handle)) == 0) {
+		    ntcp->nc_flags |= NC_CF_OPEN;
+		} else {
+		    /*
+		     * We'll create later...
+		     */
+		    error = 0;
+		}
 	    } else {
 		if ((int) ntcp->nc_omode < (int) SYSDEP_OPEN_RW)
 		    ntcp->nc_flags |= NC_READ_ONLY;
@@ -488,36 +494,39 @@ v10_readblock(nc_context_t *ntcp, void *buffer)
     /*
      * Check to see if we can get the result from the change file.
      */
-    if (NTCTX_HAVE_VERDEP(ntcp) &&
-	(!ntcp->nc_cf_handle || 
-	 ((error = cf_readblock(ntcp->nc_cf_handle, buffer)) != 0))) {
-	v10_context_t *v10p = (v10_context_t *) ntcp->nc_verdep;
+    if (NTCTX_HAVE_VERDEP(ntcp)) {
+	if (ntcp->nc_cf_handle) {
+	    cf_seek(ntcp->nc_cf_handle, ntcp->nc_curblock);
+	    error = cf_readblock(ntcp->nc_cf_handle, buffer);
+	}
+	if (error) {
+	    v10_context_t *v10p = (v10_context_t *) ntcp->nc_verdep;
 
-	/*
-	 * Determine whether the block is used/valid.
-	 */
-	if (bitmap_bit_value(v10p->v10_bitmap, ntcp->nc_curblock)) {
-	    /* block is valid */
-	    if ((error = seek2cluster(ntcp, ntcp->nc_curblock))	== 0) {
-		u_int64_t r_size = -1;
-
-		(void) (*ntcp->nc_sysdep->sys_read)(ntcp->nc_fd,
-						   buffer,
-						   ntcp->nc_head.cluster_size,
-						   &r_size);
-		/*
-		 * XXX - endian?
-		 */
-		if (r_size != ntcp->nc_head.cluster_size) {
-		    error = EIO;
-		}
-	    }
-	} else {
 	    /*
-	     * If we're reading an invalid block, use the handy buffer.
+	     * Determine whether the block is used/valid.
 	     */
-	    memcpy(buffer, ntcp->nc_ivblock, ntcp->nc_head.cluster_size);
-	    error = 0;	/* This shouldn't be necessary... */
+	    if (bitmap_bit_value(v10p->v10_bitmap, ntcp->nc_curblock)) {
+		/* block is valid */
+		if ((error = seek2cluster(ntcp, ntcp->nc_curblock)) == 0) {
+		    u_int64_t r_size = -1;
+
+		    (void) (*ntcp->nc_sysdep->sys_read)
+			(ntcp->nc_fd, buffer, ntcp->nc_head.cluster_size,
+			 &r_size);
+		    /*
+		     * XXX - endian?
+		     */
+		    if (r_size != ntcp->nc_head.cluster_size) {
+			error = EIO;
+		    }
+		}
+	    } else {
+		/*
+		 * If we're reading an invalid block, use the handy buffer.
+		 */
+		memcpy(buffer, ntcp->nc_ivblock, ntcp->nc_head.cluster_size);
+		error = 0;	/* This shouldn't be necessary... */
+	    }
 	}
     }
     return(error);
@@ -577,6 +586,7 @@ v10_writeblock(nc_context_t *ntcp, void *buffer)
 	    error = 0;
 	}
 	if (!error) {
+	    cf_seek(ntcp->nc_cf_handle, ntcp->nc_curblock);
 	    error = cf_writeblock(ntcp->nc_cf_handle, buffer);
 	}
     }

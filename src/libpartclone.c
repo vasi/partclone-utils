@@ -157,12 +157,18 @@ v1_init(pc_context_t *pcp)
 	    pcp->pc_flags |= (PC_HAVE_VERDEP|PC_VERSION_INIT);
 
 	    if (pcp->pc_cf_path && 
-		((int) pcp->pc_omode >= (int) SYSDEP_OPEN_RW) &&
-		((error = cf_init(pcp->pc_cf_path, pcp->pc_sysdep,
-				  pcp->pc_head.block_size,
-				  pcp->pc_head.totalblock,
-				  &pcp->pc_cf_handle)) == 0)) {
-		pcp->pc_flags |= PC_CF_OPEN;
+		((int) pcp->pc_omode >= (int) SYSDEP_OPEN_RW)) {
+		if ((error = cf_init(pcp->pc_cf_path, pcp->pc_sysdep,
+				     pcp->pc_head.block_size,
+				     pcp->pc_head.totalblock,
+				     &pcp->pc_cf_handle)) == 0) {
+		    pcp->pc_flags |= PC_CF_OPEN;
+		} else {
+		    /*
+		     * We'll create later...
+		     */
+		    error = 0;
+		}
 	    } else {
 		if ((int) pcp->pc_omode < (int) SYSDEP_OPEN_RW)
 		    pcp->pc_flags |= PC_READ_ONLY;
@@ -421,61 +427,65 @@ v1_readblock(pc_context_t *pcp, void *buffer)
     /*
      * Check to see if we can get the result from the change file.
      */
-    if (PCTX_HAVE_VERDEP(pcp) &&
-	(!pcp->pc_cf_handle || 
-	 ((error = cf_readblock(pcp->pc_cf_handle, buffer)) != 0))) {
-	v1_context_t *v1p = (v1_context_t *) pcp->pc_verdep;
+    if (PCTX_HAVE_VERDEP(pcp)) {
+	if (pcp->pc_cf_handle) {
+	    cf_seek(pcp->pc_cf_handle, pcp->pc_curblock);
+	    error = cf_readblock(pcp->pc_cf_handle, buffer);
+	}
+	if (error) {
+	    v1_context_t *v1p = (v1_context_t *) pcp->pc_verdep;
 
-	/*
-	 * Determine whether the block is used/valid.
-	 */
-	if (v1p->v1_bitmap[pcp->pc_curblock]) {
-	    /* block is valid */
-	    int64_t boffs = rblock2offset(pcp, v1p->v1_nvbcount);
-	    if ((error = (*pcp->pc_sysdep->sys_seek)
-		 (pcp->pc_fd, boffs, SYSDEP_SEEK_ABSOLUTE, (u_int64_t *) NULL))
-		== 0) {
-		u_int64_t r_size, c_size;
-		unsigned long crc_ck = 0xffffffffL;
-		unsigned long crc_ck2;
-		/*
-		 * The stored checksums are apparently incremental.  So,
-		 * get the CRC from the previous block and use it as the
-		 * starting checksum for this block.
-		 */
-		if (v1p->v1_nvbcount) {
-		    (void) (*pcp->pc_sysdep->sys_seek)(pcp->pc_fd,
-						       -CRC_SIZE, 
-						       SYSDEP_SEEK_RELATIVE,
-						       (u_int64_t *) NULL);
-		    (void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd, 
-						       &crc_ck, 
-						       CRC_SIZE, &c_size);
-		}
-		(void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd,
-						   buffer,
-						   pcp->pc_head.block_size,
-						   &r_size);
-		crc_ck = v1_crc32(v1p, crc_ck, buffer, r_size);
-		(void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd, 
-						   &crc_ck2, 
-						   CRC_SIZE,
-						   &c_size);
-		/*
-		 * XXX - endian?
-		 */
-		if ((r_size != pcp->pc_head.block_size) ||
-		    (c_size != CRC_SIZE) || (crc_ck != crc_ck2)) {
-		    error = EIO;
-		}
-		v1p->v1_nvbcount++;
-	    }
-	} else {
 	    /*
-	     * If we're reading an invalid block, use the handy buffer.
+	     * Determine whether the block is used/valid.
 	     */
-	    memcpy(buffer, pcp->pc_ivblock, pcp->pc_head.block_size);
-	    error = 0;	/* This shouldn't be necessary... */
+	    if (v1p->v1_bitmap[pcp->pc_curblock]) {
+		/* block is valid */
+		int64_t boffs = rblock2offset(pcp, v1p->v1_nvbcount);
+		if ((error = (*pcp->pc_sysdep->sys_seek)
+		     (pcp->pc_fd, boffs, SYSDEP_SEEK_ABSOLUTE, 
+		      (u_int64_t *) NULL)) == 0) {
+		    u_int64_t r_size, c_size;
+		    unsigned long crc_ck = 0xffffffffL;
+		    unsigned long crc_ck2;
+		    /*
+		     * The stored checksums are apparently incremental.  So,
+		     * get the CRC from the previous block and use it as the
+		     * starting checksum for this block.
+		     */
+		    if (v1p->v1_nvbcount) {
+			(void) (*pcp->pc_sysdep->sys_seek)(pcp->pc_fd,
+							   -CRC_SIZE, 
+							   SYSDEP_SEEK_RELATIVE,
+							   (u_int64_t *) NULL);
+			(void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd, 
+							   &crc_ck, 
+							   CRC_SIZE, &c_size);
+		    }
+		    (void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd,
+						       buffer,
+						       pcp->pc_head.block_size,
+						       &r_size);
+		    crc_ck = v1_crc32(v1p, crc_ck, buffer, r_size);
+		    (void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd, 
+						       &crc_ck2, 
+						       CRC_SIZE,
+						       &c_size);
+		    /*
+		     * XXX - endian?
+		     */
+		    if ((r_size != pcp->pc_head.block_size) ||
+			(c_size != CRC_SIZE) || (crc_ck != crc_ck2)) {
+			error = EIO;
+		    }
+		    v1p->v1_nvbcount++;
+		}
+	    } else {
+		/*
+		 * If we're reading an invalid block, use the handy buffer.
+		 */
+		memcpy(buffer, pcp->pc_ivblock, pcp->pc_head.block_size);
+		error = 0;	/* This shouldn't be necessary... */
+	    }
 	}
     }
     return(error);
@@ -535,6 +545,7 @@ v1_writeblock(pc_context_t *pcp, void *buffer)
 	    error = 0;
 	}
 	if (!error) {
+	    cf_seek(pcp->pc_cf_handle, pcp->pc_curblock);
 	    error = cf_writeblock(pcp->pc_cf_handle, buffer);
 	}
     }

@@ -10,17 +10,21 @@
  * any later version.
  *
  */
+#include <stdlib.h>
 #include <errno.h>
 #include <libimage.h>
 #include <libntfsclone.h>
 #include <libpartclone.h>
+#include <librawimage.h>
 
 extern image_dispatch_t partclone_image_type;
 extern image_dispatch_t ntfsclone_image_type;
+extern image_dispatch_t raw_image_type;
 
 static const image_dispatch_t *known_types[] = {
     &ntfsclone_image_type,
     &partclone_image_type,
+    &raw_image_type,		/* must be last */
 };
 
 #define	IMAGE_MAGIC	0xceebee00
@@ -34,23 +38,26 @@ typedef struct image_handle {
 int 
 image_open(const char *path, const char *cfpath, 
 	   sysdep_open_mode_t omode, const sysdep_dispatch_t *sysdep,
-	   void **rpp)
+	   int raw_allowed, void **rpp)
 {
     int itidx;
     int error = ENOENT;
+    image_dispatch_t *fentry = (image_dispatch_t *) NULL;
 
     for (itidx = 0; itidx < (sizeof(known_types)/sizeof(known_types[0]));
 	 itidx++) {
 	if (!(error = (*known_types[itidx]->probe)(path, sysdep))) {
+	    fentry = (image_dispatch_t *) known_types[itidx];
 	    break;
 	}
     }
-    if (itidx < (sizeof(known_types)/sizeof(known_types[0]))) {
+    if (fentry && ((itidx < (sizeof(known_types)/sizeof(known_types[0]))-1) ||
+		   raw_allowed)) {
 	if (!(error = (*sysdep->sys_malloc)(rpp, sizeof(image_handle_t)))) {
 	    image_handle_t *ihp = (image_handle_t *) *rpp;
 	    ihp->i_magic = IMAGE_MAGIC;
 	    ihp->i_sysdep = (sysdep_dispatch_t *) sysdep;
-	    ihp->i_dispatch = (image_dispatch_t *) known_types[itidx];
+	    ihp->i_dispatch = (image_dispatch_t *) fentry;
 	    error = (*ihp->i_dispatch->open)(path, cfpath, omode, sysdep,
 					     &ihp->i_type_handle);
 	}
@@ -65,7 +72,10 @@ image_close(void *rp)
     int error = EINVAL;
     if (ihp && (ihp->i_magic == IMAGE_MAGIC)) {
 	error = (*ihp->i_dispatch->close)(ihp->i_type_handle);
+	ihp->i_magic = 0;
 	(void) (ihp->i_sysdep->sys_free)(ihp);
+    } else {
+	printf("closing stale image handle...\n");
     }
     return(error);
 }

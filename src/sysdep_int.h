@@ -128,5 +128,13 @@ typedef struct sysdep_dispatch {
      *	EINVAL	- Invalid pointer
      */
     int		(*sys_free)(void *mp);
+    /*
+     * sys_file_size	- Determine a file's size.
+     *
+     * Paramters:
+     *  rh	- Open file handle.
+     *  nbytes	- File size.
+     */
+    int		(*sys_file_size)(void *rh, u_int64_t *nbytes);
 } sysdep_dispatch_t;
 #endif	/* _SYSDEP_INT_H_ */

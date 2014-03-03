@@ -210,7 +210,36 @@ posix_free(void *mp)
     }
 }
 
+/*
+ * sys_file_size	- Determine a file's size.
+ *
+ * Paramters:
+ *  rh	- Open file handle.
+ *  nbytes	- File size.
+ */
+static int
+posix_file_size(void *rh, u_int64_t *nbytes)
+{
+    int error = EINVAL;
+    int *fhp = (int *) rh;
+    if (fhp) {
+	struct stat sbuf;
+	if ((error = fstat(*fhp, &sbuf)) == 0) {
+	    if (sbuf.st_size == 0) {
+		u_int64_t curpos;
+		if (!posix_seek(rh, 0, SYSDEP_SEEK_RELATIVE, &curpos)) {
+		    error = posix_seek(rh, 0, SYSDEP_SEEK_END, nbytes);
+		    (void) posix_seek(rh, curpos, SYSDEP_SEEK_ABSOLUTE, NULL);
+		}
+	    } else {
+		*nbytes = sbuf.st_size;
+	    }
+	}
+    }
+    return(error);
+}
+
 const sysdep_dispatch_t posix_dispatch = 
 { posix_open, posix_close, posix_seek, posix_read, posix_write, posix_malloc,
-  posix_free };
+  posix_free, posix_file_size };
 

@@ -73,6 +73,7 @@ typedef struct nbd_context {
     int		svc_daemon_mode;
     int		svc_rdonly;
     int		svc_tolerant;
+    int		svc_raw_available;
     u_int64_t	svc_blocksize;
     u_int64_t	svc_blockcount;
     u_int64_t	svc_offsetmask;
@@ -479,38 +480,48 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 			    }
 			}
 			if (!error) {
-			    /*
-			     * Retry the read if we're interrupted but not if 
-			     * it's time to leave.
-			     */
-			    while (((rlength = 
-				     read(ncp->svc_fh, readbuf, length))
-				    == -1) && (errno == EINTR) && 
-				   (!timetoleave))
-				;
-			    if (rlength == length) {
-				if (!(error = image_seek(pctx, startblock)) &&
-				    !(error = 
-				      image_writeblocks(pctx, 
-							readbuf,
-							blockcount))) {
-				    logmsg(ncp, 2, 
-					   "NBD_WRITE image write success\n");
+			    char *rembp = readbuf;
+			    u_int64_t remlen = length;
+			    for ((rembp = readbuf, remlen = length);
+				 !error && remlen;
+				) {
+				/*
+				 * Retry the read if we're interrupted but not
+				 * if it's time to leave.
+				 */
+				while (((rlength = 
+					 read(ncp->svc_fh, rembp, remlen))
+					== -1) && (errno == EINTR) && 
+				       (!timetoleave))
+				    ;
+				if (rlength == remlen) {
+				    if (!(error = image_seek(pctx, 
+							     startblock)) &&
+					!(error = 
+					  image_writeblocks(pctx, 
+							    readbuf,
+							    blockcount))) {
+					logmsg(ncp, 2, 
+					       "NBD_WRITE image write success\n"
+					    );
+				    } else {
+					logmsg(ncp, 1,
+					       "NBD_WRITE: write fail %d\n",
+					       error);
+				    }
 				} else {
-				    logmsg(ncp, 1,
-					   "NBD_WRITE: write fail %d\n", error);
+				    if (rlength >= 0) {
+					logmsg(ncp, 1,
+					       "NBD_WRITE fail: short read of data\n");
+				    } else {
+					error = errno;
+					logmsg(ncp, 1,
+					       "NBD_WRITE fail: read fail %d\n",
+					       error);
+				    }
 				}
-			    } else {
-				if (rlength >= 0) {
-				    logmsg(ncp, 1,
-					   "NBD_WRITE fail: short read of data\n");
-				    error = EIO;
-				} else {
-				    error = errno;
-				    logmsg(ncp, 1,
-					   "NBD_WRITE fail: read fail %d\n",
-					   error);
-				}
+				remlen -= rlength;
+				rembp += rlength;
 			    }
 			} else {
 			    logmsg(ncp, 1, "NBD_WRITE: priming read fail %d\n",
@@ -585,6 +596,18 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 	    } else {
 		logmsg(ncp, 1, "[%s] Bad message from kernel: %08x\n", 
 			ncp->svc_progname, request.magic);
+		/*
+		 * It's unclear what to do here.  We've obviously lost sync
+		 * with the kernel.  Will reading 32-bit quantities until we
+		 * get back in sync work?  I dunno.  Without the following
+		 * snippet, we read nbd_requests until we (hopefully) get
+		 * back in sync.  The question then is if the kernel is
+		 * waiting for a response, then we're completely hosed.
+		 */
+#ifdef	POTENTIAL_DISASTER
+		timetoleave = 1;
+		error = EIO;
+#endif	/* POTENTIAL_DISASTER */
 	    }
 	} else {
 	    if ((rlength == -1) && (errno != EINTR)) {
@@ -727,7 +750,7 @@ main(int argc, char *argv[])
     /*
      * Parse options.
      */
-    while ((option = getopt(argc, argv, "c:d:f:v:m:t:DrwT")) != -1) {
+    while ((option = getopt(argc, argv, "c:d:f:v:m:t:DrwTR")) != -1) {
 	switch (option) {
 	case 'c': cfile = optarg; break;
 	case 'd': nc.nbd_dev = optarg; break;
@@ -739,6 +762,7 @@ main(int argc, char *argv[])
 	case 'r': nc.svc_rdonly = 1; break;
 	case 'w': nc.svc_rdonly = 0; break;
 	case 'T': nc.svc_tolerant = !nc.svc_tolerant; break;
+	case 'R': nc.svc_raw_available = !nc.svc_raw_available; break;
 	default: error = 1; break;
 	}
     }
@@ -753,7 +777,8 @@ main(int argc, char *argv[])
 	 */
 	if (!(error = image_open(file, cfile, 
 				 (nc.svc_rdonly) ? SYSDEP_OPEN_RO : SYSDEP_OPEN_RW,
-				 &posix_dispatch, &pctx))) {
+				 &posix_dispatch,
+				 nc.svc_raw_available, &pctx))) {
 	    /*
 	     * Set tolerant mode (if specified).
 	     */
