@@ -1,3 +1,6 @@
+March 2014	Paul Park	paul@idealworldinc.com
+	Add raw (dd) image handling.
+	Fix change file handling for multi-block writes.
 March 2013	Paul Park	paul@idealworldinc.com
 	Fix ntfsclone version 10.0 image handling
 	Fix 64-bit bug.
