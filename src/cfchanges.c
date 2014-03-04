@@ -75,52 +75,63 @@ verify_block(void *cf, u_int64_t offs, u_int64_t index, void *rbuffer,
 }
 
 void
-dump_blocks(cf_header_t *h, u_int64_t *bm, void *cf) {
+dump_blocks(cf_header_t *h, u_int64_t *bm, void *cf, void *rw, void *ro) {
     u_int64_t bi, nread;
     u_int64_t nfound = 0;
-    u_int64_t bsize = 0;
+    u_int64_t bsize = image_blocksize(rw);
     void *rbuffer = (void *) NULL;
-    int error;
+    void *wbuffer = (void *) NULL;
+    int error = (*sysdep->sys_malloc)(&rbuffer, bsize);
+    (void) (*sysdep->sys_malloc)(&wbuffer, bsize);
     for (bi=0; bi<h->cf_total_blocks; bi++) {
 	if (bm[bi]) {
 	    int good = 0;
 	    printf("%lld: offset 0x%016llx: ", bi, bm[bi]);
 	    nfound++;
-	    if (bsize == 0) {
-		for (bsize = 512; bsize < (128*1024*1024); bsize *= 2) {
-		    if (rbuffer) {
-			(void) (*sysdep->sys_free)(rbuffer);
-		    }
-		    (void) (*sysdep->sys_malloc)(&rbuffer, bsize);
-		    if (rbuffer) {
-			if (!verify_block(cf, bm[bi], bi, rbuffer, bsize)) {
-			    good = 1;
-			    break;
-			}
-		    }
-		}
-	    } else {
-		if (!verify_block(cf, bm[bi], bi, rbuffer, bsize)) {
-		    good = 1;
-		}
+	    if (!verify_block(cf, bm[bi], bi, rbuffer, bsize)) {
+		good = 1;
 	    }
 	    printf("%s\n", (good) ? "ok" : "INVALID");
-	    if (bsize && rbuffer) {
+	    (void) image_seek(rw, bi);
+	    (void) image_seek(ro, bi);
+	    if (((error = image_readblocks(rw, wbuffer, 1)) == 0) &&
+		((error = image_readblocks(ro, rbuffer, 1)) == 0)) {
 		u_int64_t boff;
 		for (boff = 0; boff < bsize; boff += 16) {
 		    u_int64_t soff;
-		    printf("0x%04x: ", (u_int16_t) boff);
+		    int doit = 0;
 		    for (soff = 0; soff < 16; soff++) {
-			printf("%02x ", ((unsigned char *) rbuffer)[boff+soff]);
+			if (((unsigned char *) rbuffer)[boff+soff] !=
+			    ((unsigned char *) wbuffer)[boff+soff]) {
+			    doit = 1;
+			    break;
+			}
 		    }
-		    for (soff = 0; soff < 16; soff++) {
-			printf("%c", 
-			       isalnum(((unsigned char *) rbuffer)[boff+soff])?
-			       ((unsigned char *) rbuffer)[boff+soff] :
-			       ((((unsigned char *) rbuffer)[boff+soff]) ? '.' :
-				' '));
+		    if (doit) {
+			printf("0x%04x: ", (u_int16_t) boff);
+			for (soff = 0; soff < 16; soff++) {
+			    printf("%02x ", ((unsigned char *) rbuffer)[boff+soff]);
+			}
+			for (soff = 0; soff < 16; soff++) {
+			    printf("%c", 
+				   isalnum(((unsigned char *) rbuffer)[boff+soff])?
+				   ((unsigned char *) rbuffer)[boff+soff] :
+				   ((((unsigned char *) rbuffer)[boff+soff]) ? '.' :
+				    ' '));
+			}
+			printf(" | ");
+			for (soff = 0; soff < 16; soff++) {
+			    printf("%02x ", ((unsigned char *) wbuffer)[boff+soff]);
+			}
+			for (soff = 0; soff < 16; soff++) {
+			    printf("%c", 
+				   isalnum(((unsigned char *) wbuffer)[boff+soff])?
+				   ((unsigned char *) wbuffer)[boff+soff] :
+				   ((((unsigned char *) wbuffer)[boff+soff]) ? '.' :
+				    ' '));
+			}
+			printf("\n");
 		    }
-		    printf("\n");
 		}
 	    }
 	}
@@ -134,13 +145,28 @@ dump_blocks(cf_header_t *h, u_int64_t *bm, void *cf) {
 int
 main(int argc, char *argv[])
 {
-    void *cfp;
     int i, error;
 
-    for (i=1; i<argc; i++) {
-	if ((error = (*sysdep->sys_open)(&cfp, argv[i], SYSDEP_OPEN_RO)) == 0) {
+    if (argc > 2) {
+	void *cfp;
+	void *roctx = (void *) NULL;
+	void *rwctx = (void *) NULL;
+
+	char *basefile = argv[1];
+	char *changefile = argv[2];
+
+	if (((error = image_open(basefile, (char *) NULL, SYSDEP_OPEN_RO,
+				 sysdep, 1, &roctx)) == 0) &&	
+	    ((error = image_verify(roctx)) == 0) &&
+	    ((error = image_open(basefile, changefile, SYSDEP_OPEN_RW,
+				 sysdep, 1, &rwctx)) == 0) &&
+	    ((error = image_verify(rwctx)) == 0) &&
+	    ((error = (*sysdep->sys_open)(&cfp, changefile, 
+					  SYSDEP_OPEN_RO)) == 0)) {
 	    cf_header_t header;
 	    u_int64_t nread;
+	    image_tolerant_mode(roctx);
+	    image_tolerant_mode(rwctx);
 	    (void) (*sysdep->sys_seek)(cfp, 0, SYSDEP_SEEK_ABSOLUTE,
 				       (u_int64_t *) NULL);
 	    if ((error = (*sysdep->sys_read)(cfp, &header, sizeof(header),
@@ -153,6 +179,7 @@ main(int argc, char *argv[])
 		    
 		    if ((error = (*sysdep->sys_malloc)(&blockmap, bmsize))
 			== 0) {
+			
 			dump_header(argv[i], &header);
 			(void) (*sysdep->sys_seek)(cfp, 
 						   header.cf_blockmap_offset,
@@ -161,7 +188,7 @@ main(int argc, char *argv[])
 			if ((error = (*sysdep->sys_read)(cfp, blockmap,
 							 bmsize, &nread))
 			    == 0) {
-			    dump_blocks(&header, blockmap, cfp);
+			    dump_blocks(&header, blockmap, cfp, roctx, rwctx);
 			} else {
 			    fprintf(stderr, "%s: cannot read blockmap\n",
 				    argv[i]);
@@ -177,10 +204,15 @@ main(int argc, char *argv[])
 		fprintf(stderr, "%s: cannot read header\n", argv[i]);
 	    }
 	    (void) (*sysdep->sys_close)(cfp);
+	    (void) image_close(rwctx);
+	    (void) image_close(roctx);
 	} else {
-	    fprintf(stderr, "%s: cannot open %s\n", argv[0], argv[i]);
-	    break;
+	    fprintf(stderr, "%s: cannot open %s with %s\n", argv[0], argv[1],
+		    argv[2]);
 	}
+    } else {
+	fprintf(stderr, "%s: usage %s image-file change-file\n",
+		argv[0], argv[0]);
     }
     return(error);
 }

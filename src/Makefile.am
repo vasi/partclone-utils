@@ -11,7 +11,7 @@
 # any later version.
 #
 sbin_PROGRAMS = imagemount partclone_imageinfo ntfsclone_imageinfo
-noinst_PROGRAMS = libpctest libntfstest cfdump
+noinst_PROGRAMS = libpctest libntfstest cfdump cfchanges
 
 noinst_HEADERS = sysdep_int.h sysdep_posix.h partclone.h libpartclone.h libntfsclone.h libimage.h changefile.h changefileint.h ntfsclone.h librawimage.h
 noinst_LIBRARIES = librawimage.a libntfsclone.a libpartclone.a libimage.a libchangefile.a libsysdep_posix.a
@@ -34,3 +34,5 @@ ntfsclone_imageinfo_SOURCES = ntfsclone_imageinfo.c
 ntfsclone_imageinfo_LDADD = libntfsclone.a libchangefile.a libsysdep_posix.a
 cfdump_SOURCES = cfdump.c
 cfdump_LDADD = libchangefile.a libsysdep_posix.a
+cfchanges_SOURCES = cfchanges.c
+cfchanges_LDADD = libimage.a libpartclone.a libntfsclone.a librawimage.a libchangefile.a libsysdep_posix.a
