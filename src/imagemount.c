@@ -32,6 +32,7 @@
 #include <sys/mount.h>
 #include <syslog.h>
 #include <sys/wait.h>
+#include <arpa/inet.h>
 #ifdef	HAVE_SYS_CAPABILITY_H
 #include <sys/capability.h>
 #endif	/* HAVE_SYS_CAPABILITY_H */

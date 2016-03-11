@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 #include <sysdep_int.h>
 #include <sysdep_posix.h>
 #include <changefileint.h>

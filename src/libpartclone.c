@@ -132,7 +132,7 @@ typedef struct version_1_context {
     unsigned char	*v1_bitmap;		/* Usage bitmap */
     u_int64_t		*v1_sumcount;		/* Precalculated indices */
     u_int64_t		v1_nvbcount;		/* Preceding valid blocks */
-    unsigned long	v1_crc_tab32[CRC_TABLE_LEN];
+    u_int32_t		v1_crc_tab32[CRC_TABLE_LEN];
 						/* Precalculated CRC table */
     u_int16_t		v1_bitmap_factor;	/* log2(entries)/index */
 } v1_context_t;
@@ -183,7 +183,7 @@ v1_init(pc_context_t *pcp)
 	     */
 	    for (i=0; i<CRC_TABLE_LEN; i++) {
 		int j;
-		unsigned long init_crc = (unsigned long) i;
+		u_int32_t init_crc = (u_int32_t) i;
 		for (j=0; j<CRC_UNIT_BITS; j++) {
 		    init_crc = (init_crc & 0x00000001L) ?
 			(init_crc >> 1) ^ 0xEDB88320L :
@@ -396,11 +396,11 @@ rblock2offset(pc_context_t *pcp, u_int64_t rbnum)
  * it's a CRC of the first byte, iterated "size" number of times.  This is
  * to mimic the behavior of partclone (ech).
  */
-static inline unsigned long 
-v1_crc32(v1_context_t *v1p, unsigned long crc, char *buf, size_t size)
+static inline u_int32_t 
+v1_crc32(v1_context_t *v1p, u_int32_t crc, char *buf, size_t size)
 {
     size_t s;
-    unsigned long tmp;
+    u_int32_t tmp;
 
     for (s=0; s<size; s++) {
 	/*
@@ -410,7 +410,7 @@ v1_crc32(v1_context_t *v1p, unsigned long crc, char *buf, size_t size)
 	 * by partclone.
 	 */
 	char c = buf[0];
-	tmp = crc ^ (((unsigned long) c) & 0x000000ffL);
+	tmp = crc ^ (((u_int32_t) c) & 0x000000ffL);
 	crc = (crc >> 8) ^ v1p->v1_crc_tab32[ tmp & 0xff ];
     }
     return(crc);
@@ -445,8 +445,8 @@ v1_readblock(pc_context_t *pcp, void *buffer)
 		     (pcp->pc_fd, boffs, SYSDEP_SEEK_ABSOLUTE, 
 		      (u_int64_t *) NULL)) == 0) {
 		    u_int64_t r_size, c_size;
-		    unsigned long crc_ck = 0xffffffffL;
-		    unsigned long crc_ck2;
+		    u_int32_t crc_ck = 0xffffffffL;
+		    u_int32_t crc_ck2;
 		    /*
 		     * The stored checksums are apparently incremental.  So,
 		     * get the CRC from the previous block and use it as the

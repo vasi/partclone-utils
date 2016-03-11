@@ -75,7 +75,7 @@ image_close(void *rp)
 	ihp->i_magic = 0;
 	(void) (ihp->i_sysdep->sys_free)(ihp);
     } else {
-	printf("closing stale image handle...\n");
+      error = ESTALE;
     }
     return(error);
 }
