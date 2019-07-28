@@ -207,6 +207,59 @@ v1_init(pc_context_t *pcp)
     return(error);
 }
 
+static int
+precalculate_sumcount(pc_context_t *pcp)
+{
+    int error = EINVAL;
+    v1_context_t *v1p = (v1_context_t *) pcp->pc_verdep;
+
+    if ((error =
+         (*pcp->pc_sysdep->sys_malloc)
+         (&v1p->v1_sumcount,
+          ((pcp->pc_head.totalblock >>
+          v1p->v1_bitmap_factor)+1) *
+          sizeof(u_int64_t))) == 0) {
+	    /*
+	     * Precalculate the count of preceding valid blocks
+	     * for every 1k blocks.
+	     */
+	    u_int64_t i, nset = 0;
+	    for (i=0; i<pcp->pc_head.totalblock; i++) {
+		if ((i & ((1<<v1p->v1_bitmap_factor)-1)) == 0) {
+		    v1p->v1_sumcount[i>>v1p->v1_bitmap_factor] =
+			nset;
+		}
+		/* [2011-08]
+		 * ...sigh... the *bitmap* can have more than
+		 * two values.  It can be 1, in which case it's
+		 * definitely in the file.  It can be zero
+		 * in which case, it's definitely not in the
+		 * file.  And it can be anything else that fits
+		 * into a byte?  What does it mean?  I don't
+		 * know.  But it's not set.
+		 */
+		if (v1p->v1_bitmap[i] == 1)
+		    nset++;
+	    }
+	    /*
+	     * Fixup device size...
+	     */
+	    i = pcp->pc_head.totalblock *
+		pcp->pc_head.block_size;
+	    if (pcp->pc_head.device_size != i)
+		pcp->pc_head.device_size = i;
+	    if (!error && pcp->pc_cf_handle) {
+		/*
+		 * Verify the change file, if present.
+		 */
+		error = cf_verify(pcp->pc_cf_handle);
+		if (!error)
+		    pcp->pc_flags |= PC_CF_VERIFIED;
+	    }
+    }
+    return(error);
+}
+
 /*
  * v1_verify	- Verify the currently open file.
  *
@@ -262,51 +315,7 @@ v1_verify(pc_context_t *pcp)
 						      &r_size)) == 0) &&
 			(r_size == sizeof(magicstr)) &&
 			(memcmp(magicstr, cmagicstr, sizeof(magicstr)) == 0)) {
-			if ((error = 
-			     (*pcp->pc_sysdep->sys_malloc)
-			     (&v1p->v1_sumcount,
-			      ((pcp->pc_head.totalblock >> 
-				v1p->v1_bitmap_factor)+1) * 
-			      sizeof(u_int64_t))) == 0) {
-			    /*
-			     * Precalculate the count of preceding valid blocks
-			     * for every 1k blocks.
-			     */
-			    u_int64_t i, nset = 0;
-			    for (i=0; i<pcp->pc_head.totalblock; i++) {
-				if ((i & ((1<<v1p->v1_bitmap_factor)-1)) == 0) {
-				    v1p->v1_sumcount[i>>v1p->v1_bitmap_factor] =
-					nset;
-				}
-				/* [2011-08]
-				 * ...sigh... the *bitmap* can have more than
-				 * two values.  It can be 1, in which case it's
-				 * definitely in the file.  It can be zero
-				 * in which case, it's definitely not in the
-				 * file.  And it can be anything else that fits
-				 * into a byte?  What does it mean?  I don't
-				 * know.  But it's not set.
-				 */
-				if (v1p->v1_bitmap[i] == 1)
-				    nset++;
-			    }
-			    /*
-			     * Fixup device size...
-			     */
-			    i = pcp->pc_head.totalblock * 
-				pcp->pc_head.block_size;
-			    if (pcp->pc_head.device_size != i)
-				pcp->pc_head.device_size = i;
-
-			    if (!error && pcp->pc_cf_handle) {
-				/*
-				 * Verify the change file, if present.
-				 */
-				error = cf_verify(pcp->pc_cf_handle);
-				if (!error)
-				    pcp->pc_flags |= PC_CF_VERIFIED;
-			    }
-			}
+			error = precalculate_sumcount(pcp);
 		    } else {
 			if (error == 0)
 			    error = EINVAL;
