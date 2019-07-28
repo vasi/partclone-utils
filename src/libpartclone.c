@@ -281,29 +281,6 @@ v1_verify(pc_context_t *pcp)
 			    if (pcp->pc_head.device_size != i)
 				pcp->pc_head.device_size = i;
 
-			    /*
-			     * Is the count of used blocks good?
-			     */
-			    if (pcp->pc_head.usedblocks != nset) {
-			        /* [2011-08]
-				 * What should we do in this case?  The old
-				 * version punted, thinking that it is an
-				 * inconsistency.  However, at the time of
-				 * header construction it may not be possible
-				 * to get a definitive count of used blocks
-				 * without scanning the entire bitmap.  So
-				 * some filesystems use a derived count, which
-				 * can be off. 
-				 * [2013-12]
-				 * If we're tolerant, fix it.  Otherwise, gripe.
-				 */
-				if (PCTX_TOLERANT(pcp)) {
-				    /* what?! - Fix it up silently. */
-				    pcp->pc_head.usedblocks = nset;
-				} else {
-				    error = EFAULT;
-				}
-			    } 
 			    if (!error && pcp->pc_cf_handle) {
 				/*
 				 * Verify the change file, if present.
