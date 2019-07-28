@@ -678,25 +678,13 @@ partclone_verify(void *rp)
 		    if (!(error = (*pcp->pc_dispatch->version_verify)(pcp))) {
 			pcp->pc_flags |= PC_VERIFIED;
 			pcp->pc_curblock = 0;
-			/*
-			 * Use the buffer in the header if it's big enough.
-			 */
-			if (pcp->pc_head.block_size <= 
-			    sizeof(pcp->pc_head.buff)) {
-			    pcp->pc_ivblock = 
-				(unsigned char *) pcp->pc_head.buff;
-			} else {
-			    /*
-			     * Otherwise, allocate a buffer.
-			     */
-			    if ((error = 
-				 (*pcp->pc_sysdep->sys_malloc)
-				 (&pcp->pc_ivblock, pcp->pc_head.block_size))
-				== 0) {
-				memset(pcp->pc_ivblock, 69, 
-				       pcp->pc_head.block_size);
-				pcp->pc_flags |= PC_HAVE_IVBLOCK;
-			    }
+			if ((error =
+			     (*pcp->pc_sysdep->sys_malloc)
+			     (&pcp->pc_ivblock, pcp->pc_head.block_size))
+			    == 0) {
+			    memset(pcp->pc_ivblock, 69,
+				   pcp->pc_head.block_size);
+			    pcp->pc_flags |= PC_HAVE_IVBLOCK;
 			}
 		    }
 		}
