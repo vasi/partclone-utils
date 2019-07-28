@@ -35,6 +35,7 @@
 #define VERSION_SIZE 4
 #define SECTOR_SIZE 512
 #define CRC_SIZE 4
+#define PARTCLONE_VERSION_SIZE (FS_MAGIC_SIZE-1)
 
 struct image_head_v1
 {
@@ -48,4 +49,27 @@ struct image_head_v1
     char buff[4096];
 };
 typedef struct image_head_v1 image_head_v1;
+
+struct image_head_v2 {
+    char magic[IMAGE_MAGIC_SIZE+1];
+    char ptc_version[PARTCLONE_VERSION_SIZE];
+    char version[VERSION_SIZE];
+    unsigned short endianess;
+    char fs[FS_MAGIC_SIZE+1];
+    unsigned long long device_size;
+    unsigned long long totalblock;
+    unsigned long long usedblocks;
+    unsigned long long used_bitmap;
+    unsigned int  block_size;
+    unsigned int feature_size;
+    unsigned short image_version;
+    unsigned short cpu_bits;
+    unsigned short checksum_mode;
+    unsigned short checksum_size;
+    unsigned int blocks_per_checksum;
+    unsigned char reseed_checksum;
+    unsigned char bitmap_mode;
+    unsigned int crc;
+} __attribute__((packed));
+typedef struct image_head_v2 image_head_v2;
 #endif	/* _PARTCLONE_H_ */

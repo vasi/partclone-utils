@@ -58,6 +58,7 @@ typedef struct libpc_context {
 			*pc_sysdep;	/* System-specific routines */
     union {
         image_head_v1 pc_head_v1;
+        image_head_v2 pc_head_v2;
     };
     struct {
         unsigned long long head_size;
@@ -544,6 +545,69 @@ v1_sync(pc_context_t *pcp)
     return(error);
 }
 
+static int
+v2_verify(pc_context_t *pcp)
+{
+    int error = EINVAL;
+	unsigned char *bitmap;
+	int i;
+
+    if (PCTX_OPEN(pcp)) {
+	/*
+	 * Verify the header magic.
+	 */
+	if (memcmp(pcp->pc_head_v2.magic, IMAGE_MAGIC, IMAGE_MAGIC_SIZE) == 0) {
+	    v1_context_t *v1p = (v1_context_t *) pcp->pc_verdep;
+
+        pcp->pc_head.block_size = pcp->pc_head_v2.block_size;
+        pcp->pc_head.totalblock = pcp->pc_head_v2.totalblock;
+        pcp->pc_head.checksum_size = pcp->pc_head_v2.checksum_size;
+        pcp->pc_head.device_size = pcp->pc_head_v2.device_size;
+        pcp->pc_head.blocks_per_checksum = pcp->pc_head_v2.blocks_per_checksum;
+        pcp->pc_head.head_size = sizeof(pcp->pc_head_v2)+pcp->pc_head.totalblock/8+pcp->pc_head.checksum_size+1;
+
+	    pcp->pc_flags |= PC_HEAD_VALID;
+	    /*
+	     * Allocate and fill the bitmap.
+	     */
+	    if ((error = (*pcp->pc_sysdep->sys_malloc)
+		 (&v1p->v1_bitmap,
+		  sizeof(unsigned char) * pcp->pc_head.totalblock)) == 0) {
+		u_int64_t r_size;
+
+		(void) (*pcp->pc_sysdep->sys_seek)(pcp->pc_fd,
+						   sizeof(pcp->pc_head_v2),
+						   SYSDEP_SEEK_ABSOLUTE,
+						   (u_int64_t *) NULL);
+
+	    if ((error = (*pcp->pc_sysdep->sys_malloc)
+		 (&bitmap,
+		  sizeof(unsigned char) * pcp->pc_head.totalblock / 8)) == 0) {
+
+		if (((error =
+		      (*pcp->pc_sysdep->sys_read)(pcp->pc_fd,
+						  bitmap,
+						  pcp->pc_head.totalblock / 8,
+						  &r_size)) == 0) &&
+		    (r_size == pcp->pc_head.totalblock / 8)) {
+
+			for (i=0; i < pcp->pc_head.totalblock; i++)
+				v1p->v1_bitmap[i] = (bitmap[i >> 3] & (1<<(i&7))) ? 1 : 0;
+
+			(void) (*pcp->pc_sysdep->sys_free)(bitmap);
+
+			error = precalculate_sumcount(pcp);
+		    } else {
+			if (error == 0)
+			    error = EINVAL;
+		    }
+		}
+	}
+	}
+    }
+    return(error);
+}
+
 /*
  * Dispatch table for handling various versions.
  */
@@ -551,6 +615,9 @@ static const v_dispatch_table_t
 version_table[] = {
     { "0001", 
       v1_init, v1_verify, v1_finish, v1_seek, v1_readblock, v1_blockused,
+      v1_writeblock, v1_sync },
+    { "0002",
+      v1_init, v2_verify, v1_finish, v1_seek, v1_readblock, v1_blockused,
       v1_writeblock, v1_sync },
 };
 
