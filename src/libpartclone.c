@@ -56,7 +56,17 @@ typedef struct libpc_context {
 			*pc_dispatch;	/* Version-dependent dispatch */
     const sysdep_dispatch_t
 			*pc_sysdep;	/* System-specific routines */
-    image_head		pc_head;	/* Image header */
+    union {
+        image_head_v1 pc_head_v1;
+    };
+    struct {
+        unsigned long long head_size;
+        unsigned int block_size;
+        unsigned long long totalblock;
+        unsigned short checksum_size;
+        unsigned long long device_size;
+        unsigned int blocks_per_checksum;
+    } pc_head;
     u_int64_t		pc_curblock;	/* Current position */
     u_int32_t		pc_flags;	/* Handle flags */
     sysdep_open_mode_t	pc_omode;	/* Open mode */
@@ -212,8 +222,15 @@ v1_verify(pc_context_t *pcp)
 	/*
 	 * Verify the header magic.
 	 */
-	if (memcmp(pcp->pc_head.magic, IMAGE_MAGIC, IMAGE_MAGIC_SIZE) == 0) {
+	if (memcmp(pcp->pc_head_v1.magic, IMAGE_MAGIC, IMAGE_MAGIC_SIZE) == 0) {
 	    v1_context_t *v1p = (v1_context_t *) pcp->pc_verdep;
+
+        pcp->pc_head.block_size = pcp->pc_head_v1.block_size;
+        pcp->pc_head.totalblock = pcp->pc_head_v1.totalblock;
+        pcp->pc_head.checksum_size = CRC_SIZE;
+        pcp->pc_head.device_size = pcp->pc_head_v1.device_size;
+        pcp->pc_head.blocks_per_checksum = 1;
+        pcp->pc_head.head_size = sizeof(pcp->pc_head_v1)+pcp->pc_head.totalblock+MAGIC_LEN;
 
 	    pcp->pc_flags |= PC_HEAD_VALID;
 	    /*
@@ -225,7 +242,7 @@ v1_verify(pc_context_t *pcp)
 		u_int64_t r_size;
 
 		(void) (*pcp->pc_sysdep->sys_seek)(pcp->pc_fd,
-						   sizeof(pcp->pc_head),
+						   sizeof(pcp->pc_head_v1),
 						   SYSDEP_SEEK_ABSOLUTE,
 						   (u_int64_t *) NULL);
 		if (((error = 
@@ -364,8 +381,9 @@ v1_seek(pc_context_t *pcp, u_int64_t blockno)
 static inline int64_t
 rblock2offset(pc_context_t *pcp, u_int64_t rbnum)
 {
-    return(sizeof(pcp->pc_head)+pcp->pc_head.totalblock+MAGIC_LEN+
-	   (rbnum*(pcp->pc_head.block_size+CRC_SIZE)));
+    return pcp->pc_head.head_size+
+           (rbnum*(pcp->pc_head.block_size))+
+           (rbnum/pcp->pc_head.blocks_per_checksum*pcp->pc_head.checksum_size);
 }
 
 /*
@@ -641,10 +659,10 @@ partclone_verify(void *rp)
 	 * Read the header.
 	 */
 	if (((error = 
-	      (*pcp->pc_sysdep->sys_read)(pcp->pc_fd, &pcp->pc_head,
-					  sizeof(pcp->pc_head), &r_size)) == 0) 
+	      (*pcp->pc_sysdep->sys_read)(pcp->pc_fd, &pcp->pc_head_v1,
+					  sizeof(pcp->pc_head_v1), &r_size)) == 0)
 	    &&
-	    (r_size == sizeof(pcp->pc_head))) {
+	    (r_size == sizeof(pcp->pc_head_v1))) {
 	    int veridx;
 	    int found = -1;
 
@@ -655,9 +673,9 @@ partclone_verify(void *rp)
 	    for (veridx = 0; 
 		 veridx < sizeof(version_table)/sizeof(version_table[0]);
 		 veridx++) {
-		if (memcmp(pcp->pc_head.version,
+		if (memcmp(pcp->pc_head_v1.version,
 			   version_table[veridx].version,
-			   sizeof(pcp->pc_head.version)) == 0) {
+			   sizeof(pcp->pc_head_v1.version)) == 0) {
 		    found = veridx;
 		    break;
 		}

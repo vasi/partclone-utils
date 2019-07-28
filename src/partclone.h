@@ -36,7 +36,7 @@
 #define SECTOR_SIZE 512
 #define CRC_SIZE 4
 
-struct image_head 
+struct image_head_v1
 {
     char magic[IMAGE_MAGIC_SIZE];
     char fs[FS_MAGIC_SIZE];
@@ -47,5 +47,5 @@ struct image_head
     unsigned long long usedblocks;
     char buff[4096];
 };
-typedef struct image_head image_head;
+typedef struct image_head_v1 image_head_v1;
 #endif	/* _PARTCLONE_H_ */
