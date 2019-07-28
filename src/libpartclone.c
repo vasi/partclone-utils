@@ -421,37 +421,12 @@ v1_readblock(pc_context_t *pcp, void *buffer)
 		if ((error = (*pcp->pc_sysdep->sys_seek)
 		     (pcp->pc_fd, boffs, SYSDEP_SEEK_ABSOLUTE, 
 		      (u_int64_t *) NULL)) == 0) {
-		    u_int64_t r_size, c_size;
-		    u_int32_t crc_ck = 0xffffffffL;
-		    u_int32_t crc_ck2;
-		    /*
-		     * The stored checksums are apparently incremental.  So,
-		     * get the CRC from the previous block and use it as the
-		     * starting checksum for this block.
-		     */
-		    if (v1p->v1_nvbcount) {
-			(void) (*pcp->pc_sysdep->sys_seek)(pcp->pc_fd,
-							   -CRC_SIZE, 
-							   SYSDEP_SEEK_RELATIVE,
-							   (u_int64_t *) NULL);
-			(void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd, 
-							   &crc_ck, 
-							   CRC_SIZE, &c_size);
-		    }
+		    u_int64_t r_size;
 		    (void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd,
 						       buffer,
 						       pcp->pc_head.block_size,
 						       &r_size);
-		    crc_ck = v1_crc32(v1p, crc_ck, buffer, r_size);
-		    (void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd, 
-						       &crc_ck2, 
-						       CRC_SIZE,
-						       &c_size);
-		    /*
-		     * XXX - endian?
-		     */
-		    if ((r_size != pcp->pc_head.block_size) ||
-			(c_size != CRC_SIZE) || (crc_ck != crc_ck2)) {
+		    if (r_size != pcp->pc_head.block_size) {
 			error = EIO;
 		    }
 		    v1p->v1_nvbcount++;
