@@ -682,7 +682,7 @@ partclone_verify(void *rp)
 			     (*pcp->pc_sysdep->sys_malloc)
 			     (&pcp->pc_ivblock, pcp->pc_head.block_size))
 			    == 0) {
-			    memset(pcp->pc_ivblock, 69,
+			    memset(pcp->pc_ivblock, 0,
 				   pcp->pc_head.block_size);
 			    pcp->pc_flags |= PC_HAVE_IVBLOCK;
 			}
