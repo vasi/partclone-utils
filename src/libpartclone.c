@@ -45,33 +45,6 @@ struct change_file_context;
 #define	PC_VALID	0x8000		/* Header is valid */
 #define	PC_TOLERANT	0x40000		/* Open in tolerant mode */
 #define	PC_READ_ONLY	0x80000		/* Open read only */
-typedef struct libpc_context {
-    void		*pc_fd;		/* File handle */
-    char 		*pc_path;	/* Path to image */
-    char		*pc_cf_path;	/* Path to change file */
-    void		*pc_cf_handle;	/* Change file handle */
-    unsigned char	*pc_ivblock;	/* Convenient invalid block */
-    void		*pc_verdep;	/* Version-dependent handle */
-    struct version_dispatch_table
-			*pc_dispatch;	/* Version-dependent dispatch */
-    const sysdep_dispatch_t
-			*pc_sysdep;	/* System-specific routines */
-    union {
-        image_head_v1 pc_head_v1;
-        image_head_v2 pc_head_v2;
-    };
-    struct {
-        unsigned long long head_size;
-        unsigned int block_size;
-        unsigned long long totalblock;
-        unsigned short checksum_size;
-        unsigned long long device_size;
-        unsigned int blocks_per_checksum;
-    } pc_head;
-    u_int64_t		pc_curblock;	/* Current position */
-    u_int32_t		pc_flags;	/* Handle flags */
-    sysdep_open_mode_t	pc_omode;	/* Open mode */
-} pc_context_t;
 
 /*
  * Macros to check state flags.

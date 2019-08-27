@@ -28,23 +28,6 @@
 #define	CRC_TABLE_LEN	(1<<CRC_UNIT_BITS)
 #define	CRC_SIZE	4
 
-typedef struct libpc_context {
-    void		*pc_fd;		/* File handle */
-    char 		*pc_path;	/* Path to image */
-    char		*pc_cf_path;	/* Path to change file */
-    void		*pc_cf_handle;	/* Change file handle */
-    unsigned char	*pc_ivblock;	/* Convenient invalid block */
-    void		*pc_verdep;	/* Version-dependent handle */
-    struct version_dispatch_table
-			*pc_dispatch;	/* Version-dependent dispatch */
-    const sysdep_dispatch_t
-			*pc_sysdep;	/* System-specific routines */
-    image_head		pc_head;	/* Image header */
-    u_int64_t		pc_curblock;	/* Current position */
-    u_int32_t		pc_flags;	/* Handle flags */
-    sysdep_open_mode_t	pc_omode;	/* Open mode */
-} pc_context_t;
-
 typedef struct version_1_context {
     unsigned char	*v1_bitmap;		/* Usage bitmap */
     u_int64_t		*v1_sumcount;		/* Precalculated indices */
