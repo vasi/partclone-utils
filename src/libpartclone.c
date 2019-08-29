@@ -787,7 +787,7 @@ int64_t
 partclone_blockcount(void *rp)
 {
     pc_context_t *pcp = (pc_context_t *) rp;
-    return((PCTX_VERIFIED(pcp)) ? pcp->pc_head.totalblock+1 : -1);
+    return((PCTX_VERIFIED(pcp)) ? pcp->pc_head.totalblock : -1);
 }
 
 /*
