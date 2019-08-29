@@ -524,6 +524,7 @@ v2_verify(pc_context_t *pcp)
     int error = EINVAL;
 	unsigned char *bitmap;
 	int i;
+    int bitmap_size;
 
     if (PCTX_OPEN(pcp)) {
 	/*
@@ -537,7 +538,13 @@ v2_verify(pc_context_t *pcp)
         pcp->pc_head.checksum_size = pcp->pc_head_v2.checksum_size;
         pcp->pc_head.device_size = pcp->pc_head_v2.device_size;
         pcp->pc_head.blocks_per_checksum = pcp->pc_head_v2.blocks_per_checksum;
-        pcp->pc_head.head_size = sizeof(pcp->pc_head_v2)+pcp->pc_head.totalblock/8+pcp->pc_head.checksum_size+1;
+
+        /* round up */
+        bitmap_size = pcp->pc_head.totalblock / 8;
+		if (pcp->pc_head.totalblock % 8)
+			bitmap_size++;
+
+        pcp->pc_head.head_size = sizeof(pcp->pc_head_v2)+bitmap_size+pcp->pc_head.checksum_size;
 
 	    pcp->pc_flags |= PC_HEAD_VALID;
 	    /*
@@ -555,14 +562,14 @@ v2_verify(pc_context_t *pcp)
 
 	    if ((error = (*pcp->pc_sysdep->sys_malloc)
 		 (&bitmap,
-		  sizeof(unsigned char) * pcp->pc_head.totalblock / 8)) == 0) {
+		  sizeof(unsigned char) * bitmap_size)) == 0) {
 
 		if (((error =
 		      (*pcp->pc_sysdep->sys_read)(pcp->pc_fd,
 						  bitmap,
-						  pcp->pc_head.totalblock / 8,
+						  bitmap_size,
 						  &r_size)) == 0) &&
-		    (r_size == pcp->pc_head.totalblock / 8)) {
+		    (r_size == bitmap_size)) {
 
 			for (i=0; i < pcp->pc_head.totalblock; i++)
 				v1p->v1_bitmap[i] = (bitmap[i >> 3] & (1<<(i&7))) ? 1 : 0;
