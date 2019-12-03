@@ -40,6 +40,9 @@ Mount block device on this mount point.
 .B -t MOUNT-TYPE
 Mount block device as this type of file system.
 .TP
+.B -i TIMEOUT
+Set a NBD timeout on the block device
+.TP
 .B -v VERBOSE
 Select logging level.
 .TP

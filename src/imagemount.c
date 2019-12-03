@@ -69,6 +69,7 @@ typedef struct nbd_context {
     char	*svc_mtype;
     char	*nbd_dev;
     int		nbd_fh;
+    int		nbd_timeout;
     int		svc_fh;
     int		svc_verbose;
     int		svc_daemon_mode;
@@ -192,6 +193,17 @@ nbd_connect(nbd_context_t *ncp, void *pctx)
 		ncp->svc_blockcount = image_blockcount(pctx);
 		ncp->svc_offsetmask = ncp->svc_blocksize - 1;
 		ncp->svc_blockmask = ~ncp->svc_offsetmask;
+		/*
+		 * if requested, set NBD connection timeout - avoid slow NBD server disconnect
+		 */
+		if (ncp->nbd_timeout >= 0) {
+		    if (ioctl(ncp->nbd_fh, NBD_SET_TIMEOUT, ncp->nbd_timeout) == -1) {
+		         error = errno;
+		         logmsg(ncp, 2, "nbd_connect: ioctl NBD_SET_TIMEOUT fail with %d\n",
+			        error);
+		    }
+		    logmsg(ncp, 1, "NBD_TIMEOUT %d\n", ncp->nbd_timeout);
+		}
 		if ((ioctl(ncp->nbd_fh, NBD_CLEAR_SOCK) == -1) ||
 		    (ioctl(ncp->nbd_fh, NBD_SET_SOCK, spair[0]) == -1) ||
 		    (ioctl(ncp->nbd_fh, NBD_SET_BLKSIZE, 
@@ -745,18 +757,20 @@ main(int argc, char *argv[])
 
     memset(&nc, 0, sizeof(nc));
     nc.nbd_fh = -1;
+    nc.nbd_timeout = -1;
     nc.svc_fh = -1;
     nc.svc_daemon_mode = 1;
 
     /*
      * Parse options.
      */
-    while ((option = getopt(argc, argv, "c:d:f:v:m:t:DrwTR")) != -1) {
+    while ((option = getopt(argc, argv, "c:d:f:v:i:m:t:DrwTR")) != -1) {
 	switch (option) {
 	case 'c': cfile = optarg; break;
 	case 'd': nc.nbd_dev = optarg; break;
 	case 'f': file = optarg; break;
 	case 'v': sscanf(optarg, "%d", &nc.svc_verbose); break;
+	case 'i': sscanf(optarg, "%d", &nc.nbd_timeout); break;
 	case 'm': nc.svc_mount = optarg; break;
 	case 't': nc.svc_mtype = optarg; break;
 	case 'D': nc.svc_daemon_mode = !nc.svc_daemon_mode; break;
@@ -844,7 +858,7 @@ main(int argc, char *argv[])
 	}
     } else {
 	fprintf(stderr, "%s: usage %s -d disk -f file [-c cfile] "
-		"[-m mount [-t type]] [-v verbose] [-Drw]\n", 
+		"[-m mount [-t type]] [-i timeout] [-v verbose] [-Drw]\n", 
 		argv[0], argv[0]);
     }
     return(error);
