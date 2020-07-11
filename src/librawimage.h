@@ -22,11 +22,11 @@ int rawimage_close(void *rp);
 int rawimage_verify(void *rp);
 int64_t rawimage_blocksize(void *rp);
 int64_t rawimage_blockcount(void *rp);
-int rawimage_seek(void *rp, u_int64_t blockno);
-u_int64_t rawimage_tell(void *rp);
-int rawimage_readblocks(void *rp, void *buffer, u_int64_t nblocks);
+int rawimage_seek(void *rp, uint64_t blockno);
+uint64_t rawimage_tell(void *rp);
+int rawimage_readblocks(void *rp, void *buffer, uint64_t nblocks);
 int rawimage_block_used(void *rp);
-int rawimage_writeblocks(void *rp, void *buffer, u_int64_t nblocks);
+int rawimage_writeblocks(void *rp, void *buffer, uint64_t nblocks);
 int rawimage_sync(void *rp);
 
 #endif	/* _LIBRAWIMAGE_H_ */

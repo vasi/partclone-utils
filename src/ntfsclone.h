@@ -41,11 +41,11 @@ typedef struct ntfs_image_header {
 	char magic[IMAGE_MAGIC_SIZE];
 	unsigned char major_ver;
 	unsigned char minor_ver;
-	u_int32_t cluster_size;
+	uint32_t cluster_size;
 	int64_t device_size;
 	int64_t nr_clusters;
 	int64_t inuse;
-	u_int32_t offset_to_image_data;	/* From start of image_hdr. */
+	uint32_t offset_to_image_data;	/* From start of image_hdr. */
 } __attribute__((__packed__)) image_hdr;
 
 #define NTFSCLONE_IMG_HEADER_SIZE_OLD	\
@@ -67,9 +67,9 @@ typedef struct ntfs_image_header {
 typedef struct ntfsclone_atom {
     char	nca_atype;
     union {
-	u_int64_t	ncau_empty_count;
-	unsigned char	ncau_used_cluster[sizeof(u_int64_t)];
+	uint64_t	ncau_empty_count;
+	unsigned char	ncau_used_cluster[sizeof(uint64_t)];
     }		nca_union;
 } __attribute__((__packed__)) ntfsclone_atom_t;
-#define	ATOM_TO_DATA_OFFSET	((u_int64_t) &(((ntfsclone_atom_t *) NULL)->nca_union.ncau_used_cluster[0]))
+#define	ATOM_TO_DATA_OFFSET	((uint64_t) &(((ntfsclone_atom_t *) NULL)->nca_union.ncau_used_cluster[0]))
 #endif	/* _NTFSCLONE_H_ */

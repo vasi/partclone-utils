@@ -27,7 +27,7 @@
  */
 int
 cf_init(const char *cfpath, const sysdep_dispatch_t *sysdep, 
-	u_int64_t blocksize, u_int64_t blockcount, void **cfpp)
+	uint64_t blocksize, uint64_t blockcount, void **cfpp)
 {
     int error = EINVAL;
     cf_context_t *cfp = (cf_context_t *) NULL;
@@ -49,7 +49,7 @@ cf_init(const char *cfpath, const sysdep_dispatch_t *sysdep,
 	     */
 	    for (i=0; i<CRC_TABLE_LEN; i++) {
 		int j;
-		u_int32_t init_crc = (u_int32_t) i;
+		uint32_t init_crc = (uint32_t) i;
 		for (j=0; j<CRC_UNIT_BITS; j++) {
 		    init_crc = (init_crc & 0x00000001L) ?
 			(init_crc >> 1) ^ 0xEDB88320L :
@@ -77,7 +77,7 @@ cf_verify(void *vcp)
 {
     int error = EINVAL;
     cf_context_t *cfp = (cf_context_t *) vcp;
-    u_int64_t nread;
+    uint64_t nread;
 
     /*
      * Make sure we're at the beginning of the file.
@@ -85,7 +85,7 @@ cf_verify(void *vcp)
     (void) (*cfp->cfc_sysdep->sys_seek)(cfp->cfc_fd,
 					0,
 					SYSDEP_SEEK_ABSOLUTE,
-					(u_int64_t *) NULL);
+					(uint64_t *) NULL);
     if (((error = (*cfp->cfc_sysdep->sys_read)(cfp->cfc_fd,
 					       &cfp->cfc_header,
 					       sizeof(cfp->cfc_header),
@@ -99,7 +99,7 @@ cf_verify(void *vcp)
 	    /* [2013-12] ntfs chicanery could have added the trailing block */
 	    ((cfp->cfc_header.cf_total_blocks == cfp->cfc_blockcount) ||
 	     (cfp->cfc_header.cf_total_blocks == (cfp->cfc_blockcount+1)))) {
-	    u_int64_t bhsize = cfp->cfc_header.cf_total_blocks *
+	    uint64_t bhsize = cfp->cfc_header.cf_total_blocks *
 		sizeof(*cfp->cfc_blockmap);
 	    /*
 	     * Allocate, find and read the blockmap.
@@ -111,7 +111,7 @@ cf_verify(void *vcp)
 							  cfp->cfc_header.
 							  cf_blockmap_offset,
 							  SYSDEP_SEEK_ABSOLUTE,
-							  (u_int64_t *) NULL)
+							  (uint64_t *) NULL)
 			) == 0) {
 		    if (((error =
 			  (*cfp->cfc_sysdep->sys_read)(cfp->cfc_fd,
@@ -143,7 +143,7 @@ cf_verify(void *vcp)
  */
 int
 cf_create(const char *cfpath, const sysdep_dispatch_t *sysdep,
-	  u_int64_t blocksize, u_int64_t blockcount, void **cfpp)
+	  uint64_t blocksize, uint64_t blockcount, void **cfpp)
 {
     int error;
     void *cfh = (void *) NULL;
@@ -157,7 +157,7 @@ cf_create(const char *cfpath, const sysdep_dispatch_t *sysdep,
 	 */
 	if ((error = (*sysdep->sys_open)(&cfh,cfpath, SYSDEP_CREATE)) == 0) {
 	    cf_header_t ncfh;
-	    u_int64_t *bmp;
+	    uint64_t *bmp;
 	    /*
 	     * A new file!
 	     */
@@ -170,10 +170,10 @@ cf_create(const char *cfpath, const sysdep_dispatch_t *sysdep,
 	    ncfh.cf_magic2 = CF_MAGIC_2;
 	    if ((error = (*sysdep->sys_malloc)(&bmp, 
 					       blockcount * 
-					       sizeof(u_int64_t))) 
+					       sizeof(uint64_t))) 
 		== 0) {
-		u_int64_t nwritten;
-		memset(bmp, 0, blockcount * sizeof(u_int64_t));
+		uint64_t nwritten;
+		memset(bmp, 0, blockcount * sizeof(uint64_t));
 		if (((error = (*sysdep->sys_write)(cfh,
 						   &ncfh,
 						   sizeof(ncfh),
@@ -182,10 +182,10 @@ cf_create(const char *cfpath, const sysdep_dispatch_t *sysdep,
 		    ((error = (*sysdep->sys_write)(cfh,
 						   bmp,
 						   blockcount *
-						   sizeof(u_int64_t),
+						   sizeof(uint64_t),
 						   &nwritten))
 		     == 0) &&
-		    (nwritten == (blockcount * sizeof(u_int64_t)))) {
+		    (nwritten == (blockcount * sizeof(uint64_t)))) {
 		    /* close it - we'll open it again below. */
 		    (void) (*sysdep->sys_close)(cfh);
 		}
@@ -215,7 +215,7 @@ cf_sync(void *vcp)
     int error = EROFS;
     cf_context_t *cfp = (cf_context_t *) vcp;
     cf_header_t oheader = cfp->cfc_header;
-    u_int64_t nwritten;
+    uint64_t nwritten;
 
     oheader.cf_flags &= ~CF_HEADER_DIRTY;
     /*
@@ -224,7 +224,7 @@ cf_sync(void *vcp)
     if (((error = (*cfp->cfc_sysdep->sys_seek)(cfp->cfc_fd,
 					       0,
 					       SYSDEP_SEEK_ABSOLUTE,
-					       (u_int64_t *) NULL)) == 0) &&
+					       (uint64_t *) NULL)) == 0) &&
 	((error = (*cfp->cfc_sysdep->sys_write)(cfp->cfc_fd,
 						&oheader,
 						sizeof(oheader),
@@ -234,13 +234,13 @@ cf_sync(void *vcp)
 					       oheader.
 					       cf_blockmap_offset,
 					       SYSDEP_SEEK_ABSOLUTE,
-					       (u_int64_t *) NULL))  == 0) &&
+					       (uint64_t *) NULL))  == 0) &&
 	((error = (*cfp->cfc_sysdep->sys_write)(cfp->cfc_fd,
 						cfp->cfc_blockmap,
 						oheader.cf_total_blocks *
-						sizeof(u_int64_t),
+						sizeof(uint64_t),
 						&nwritten)) == 0) &&
-	(nwritten == (oheader.cf_total_blocks * sizeof(u_int64_t)))) {
+	(nwritten == (oheader.cf_total_blocks * sizeof(uint64_t)))) {
 	/*
 	 * If successful, then we're no longer dirty.
 	 */
@@ -274,7 +274,7 @@ cf_finish(void *vcp)
  * cf_seek	- Change file handling for seeking to a particular block.
  */
 int
-cf_seek(void *vcp, u_int64_t blockno)
+cf_seek(void *vcp, uint64_t blockno)
 {
     int error = ENXIO;
     cf_context_t *cfp = (cf_context_t *) vcp;
@@ -288,14 +288,14 @@ cf_seek(void *vcp, u_int64_t blockno)
 /*
  * CRC routine.
  */
-static inline u_int32_t
-cf_crc32(cf_context_t *cfp, u_int32_t crc, unsigned char *buf, u_int64_t size)
+static inline uint32_t
+cf_crc32(cf_context_t *cfp, uint32_t crc, unsigned char *buf, uint64_t size)
 {
-    u_int64_t s;
-    u_int32_t tmp;
+    uint64_t s;
+    uint32_t tmp;
 
     for (s=0; s<size; s++) {
-	tmp = crc ^ (((u_int32_t) buf[s]) & 0x000000ffL);
+	tmp = crc ^ (((uint32_t) buf[s]) & 0x000000ffL);
 	crc = (crc >> 8) ^ cfp->cfc_crc_tab32[ tmp & 0xff ];
     }
     return(crc);
@@ -321,10 +321,10 @@ cf_readblock(void *vcp, void *buffer)
 						  cfp->cfc_blockmap
 						  [cfp->cfc_curpos],
 						  SYSDEP_SEEK_ABSOLUTE,
-						  (u_int64_t *) NULL)) == 0) {
-	    u_int64_t rsize = cfp->cfc_blocksize;
+						  (uint64_t *) NULL)) == 0) {
+	    uint64_t rsize = cfp->cfc_blocksize;
 	    cf_block_trailer_t btrail;
-	    u_int64_t nread;
+	    uint64_t nread;
 	    if (((error = (*cfp->cfc_sysdep->sys_read)(cfp->cfc_fd,
 						       buffer,
 						       rsize,
@@ -383,8 +383,8 @@ cf_writeblock(void *vcp, void *buffer)
 {
     int error = EROFS;
     cf_context_t *cfp = (cf_context_t *) vcp;
-    u_int64_t nbloffs = cfp->cfc_blockmap[cfp->cfc_curpos];
-    u_int64_t curpos;
+    uint64_t nbloffs = cfp->cfc_blockmap[cfp->cfc_curpos];
+    uint64_t curpos;
 
     if ((error = (*cfp->cfc_sysdep->sys_seek)(cfp->cfc_fd,
 					      nbloffs,
@@ -396,7 +396,7 @@ cf_writeblock(void *vcp, void *buffer)
 				      cf_crc32(cfp, 0, buffer,
 					       cfp->cfc_blocksize), 
 				      CF_MAGIC_3 };
-	u_int64_t nwritten;
+	uint64_t nwritten;
 	if (((error = (*cfp->cfc_sysdep->sys_write)(cfp->cfc_fd,
 						    buffer,
 						    cfp->cfc_blocksize,

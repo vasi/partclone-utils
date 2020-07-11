@@ -57,8 +57,8 @@ typedef struct libntfsclone_context {
     const sysdep_dispatch_t
 			*nc_sysdep;	/* System-specific routines */
     image_hdr		nc_head;	/* Image header */
-    u_int64_t		nc_curblock;	/* Current position */
-    u_int32_t		nc_flags;	/* Handle flags */
+    uint64_t		nc_curblock;	/* Current position */
+    uint32_t		nc_flags;	/* Handle flags */
     sysdep_open_mode_t	nc_omode;	/* Open mode */
 } nc_context_t;
 
@@ -106,7 +106,7 @@ typedef struct version_dispatch_table {
     int		(*version_init)(nc_context_t *ntcp);
     int		(*version_verify)(nc_context_t *ntcp);
     int		(*version_finish)(nc_context_t *ntcp);
-    int		(*version_seek)(nc_context_t *ntcp, u_int64_t block);
+    int		(*version_seek)(nc_context_t *ntcp, uint64_t block);
     int		(*version_readblock)(nc_context_t *ntcp, void *buffer);
     int		(*version_blockused)(nc_context_t *ntcp);
     int		(*version_writeblock)(nc_context_t *ntcp, void *buffer);
@@ -123,20 +123,20 @@ typedef struct version_dispatch_table {
  */
 typedef struct version_10_context {
     unsigned char	*v10_bitmap;		/* Usage bitmap */
-    u_int64_t		*v10_bucket_offset;	/* Precalculated indices */
-    u_int64_t		v10_current_bucket;	/* Current bucket */
-    u_int16_t		v10_bsfcount;		/* Preceding free blocks */
-    u_int16_t		v10_bucket_factor;	/* log2(entries)/index */
+    uint64_t		*v10_bucket_offset;	/* Precalculated indices */
+    uint64_t		v10_current_bucket;	/* Current bucket */
+    uint16_t		v10_bsfcount;		/* Preceding free blocks */
+    uint16_t		v10_bucket_factor;	/* log2(entries)/index */
 } v10_context_t;
 
 /*
  * Inline bitmap manipulation routines.
  */
 static inline void
-bitmap_set_bit(unsigned char *bitmap, u_int64_t bit, u_int32_t value)
+bitmap_set_bit(unsigned char *bitmap, uint64_t bit, uint32_t value)
 {
-    u_int64_t boffs = bit / 8;
-    u_int8_t bdisp = bit & 7;
+    uint64_t boffs = bit / 8;
+    uint8_t bdisp = bit & 7;
     unsigned char mask = 1 << bdisp;
     if (value) {
 	bitmap[boffs] |= mask;
@@ -145,11 +145,11 @@ bitmap_set_bit(unsigned char *bitmap, u_int64_t bit, u_int32_t value)
     }
 }
 
-static inline u_int32_t
-bitmap_bit_value(unsigned char *bitmap, u_int64_t bit)
+static inline uint32_t
+bitmap_bit_value(unsigned char *bitmap, uint64_t bit)
 {
-    u_int64_t boffs = bit / 8;
-    u_int8_t bdisp = bit & 7;
+    uint64_t boffs = bit / 8;
+    uint8_t bdisp = bit & 7;
     unsigned char mask = 1 << bdisp;
     return ((bitmap[boffs] & mask) ? 1 : 0);
 }
@@ -217,7 +217,7 @@ v10_verify(nc_context_t *ntcp)
 	 */
 	if (memcmp(ntcp->nc_head.magic, IMAGE_MAGIC, IMAGE_MAGIC_SIZE) == 0) {
 	    v10_context_t *v10p = (v10_context_t *) ntcp->nc_verdep;
-	    u_int64_t bmlen = ntcp->nc_head.nr_clusters / 8;
+	    uint64_t bmlen = ntcp->nc_head.nr_clusters / 8;
 
 	    ntcp->nc_flags |= NC_HEAD_VALID;
 	    /*
@@ -230,21 +230,21 @@ v10_verify(nc_context_t *ntcp)
 		((error = (*ntcp->nc_sysdep->sys_malloc)
 		  (&v10p->v10_bucket_offset,
 		   ((ntcp->nc_head.nr_clusters >> 
-		     v10p->v10_bucket_factor)+1) * sizeof(u_int64_t))) == 0)) {
-		u_int64_t cclust;
+		     v10p->v10_bucket_factor)+1) * sizeof(uint64_t))) == 0)) {
+		uint64_t cclust;
 		int nconsecsync;
 
 		memset(v10p->v10_bitmap, 0, bmlen);
 		memset(v10p->v10_bucket_offset, 0,
 		       ((ntcp->nc_head.nr_clusters >> 
-			 v10p->v10_bucket_factor)+1) * sizeof(u_int64_t));
+			 v10p->v10_bucket_factor)+1) * sizeof(uint64_t));
 
 		/*
 		 * Seek to the first offset.
 		 */
 		(void) (*ntcp->nc_sysdep->sys_seek)
 		    (ntcp->nc_fd, ntcp->nc_head.offset_to_image_data,
-		     SYSDEP_SEEK_ABSOLUTE, (u_int64_t *) NULL);
+		     SYSDEP_SEEK_ABSOLUTE, (uint64_t *) NULL);
 
 		/*
 		 * We always handle the last cluster.
@@ -259,8 +259,8 @@ v10_verify(nc_context_t *ntcp)
 		nconsecsync = 0;
 		while (!error && (cclust < ntcp->nc_head.nr_clusters)) {
 		    ntfsclone_atom_t ibuf;
-		    u_int64_t rsize, cfoffs;
-		    u_int64_t xcpos;
+		    uint64_t rsize, cfoffs;
+		    uint64_t xcpos;
 		    (void) (*ntcp->nc_sysdep->sys_seek)(ntcp->nc_fd, 0,
 							SYSDEP_SEEK_RELATIVE,
 							&xcpos);
@@ -318,7 +318,7 @@ v10_verify(nc_context_t *ntcp)
 			}
 		    } else {
 			if (NTCTX_TOLERANT(ntcp)) {
-			    u_int64_t discpos;
+			    uint64_t discpos;
 			    (void) (*ntcp->nc_sysdep->sys_seek)
 				(ntcp->nc_fd, sizeof(ibuf), 
 				 SYSDEP_SEEK_RELATIVE, &discpos);
@@ -369,7 +369,7 @@ v10_finish(nc_context_t *ntcp)
  * Update the number of preceding valid blocks.
  */
 static int
-v10_seek(nc_context_t *ntcp, u_int64_t blockno)
+v10_seek(nc_context_t *ntcp, uint64_t blockno)
 {
     int error = EINVAL;
 
@@ -377,7 +377,7 @@ v10_seek(nc_context_t *ntcp, u_int64_t blockno)
 	v10_context_t *v10p = (v10_context_t *) ntcp->nc_verdep;
 	int trailing_cluster_in_image = 
 	    (VDT_MINOR(ntcp->nc_dispatch) >= 1) ? 1 : 0;
-	u_int64_t pbn, cbn;
+	uint64_t pbn, cbn;
 
 	/*
 	 * The trailing cluster "should" be the same as the first cluster.
@@ -413,13 +413,13 @@ v10_seek(nc_context_t *ntcp, u_int64_t blockno)
  * seek2cluster	- Seek to the specified cluster in the image.
  */
 static inline int
-seek2cluster(nc_context_t *ntcp, u_int64_t cnum)
+seek2cluster(nc_context_t *ntcp, uint64_t cnum)
 {
     int error = EINVAL;
     v10_context_t *v10p = (v10_context_t *) ntcp->nc_verdep;
-    u_int64_t cbucket = cnum >> v10p->v10_bucket_factor;
-    u_int64_t imgpos = v10p->v10_bucket_offset[cbucket];
-    u_int64_t cpos, cfoffs;
+    uint64_t cbucket = cnum >> v10p->v10_bucket_factor;
+    uint64_t imgpos = v10p->v10_bucket_offset[cbucket];
+    uint64_t cpos, cfoffs;
 
     if (bitmap_bit_value(v10p->v10_bitmap, cnum) && imgpos) {
 	if (cbucket == v10p->v10_current_bucket) {
@@ -439,10 +439,10 @@ seek2cluster(nc_context_t *ntcp, u_int64_t cnum)
 	error = (*ntcp->nc_sysdep->sys_seek)(ntcp->nc_fd,
 					     imgpos,
 					     SYSDEP_SEEK_ABSOLUTE,
-					     (u_int64_t *) NULL);
+					     (uint64_t *) NULL);
 	while (!error && (cpos < cnum)) {
 	    ntfsclone_atom_t ibuf;
-	    u_int64_t rsize;
+	    uint64_t rsize;
 	    if ((error = (*ntcp->nc_sysdep->sys_read)(ntcp->nc_fd,
 						      &ibuf,
 						      sizeof(ibuf),
@@ -476,7 +476,7 @@ seek2cluster(nc_context_t *ntcp, u_int64_t cnum)
 	    error = (*ntcp->nc_sysdep->sys_seek)(ntcp->nc_fd,
 						 ATOM_TO_DATA_OFFSET,
 						 SYSDEP_SEEK_RELATIVE,
-						 (u_int64_t *) NULL);
+						 (uint64_t *) NULL);
 	}
     }
     return(error);
@@ -507,7 +507,7 @@ v10_readblock(nc_context_t *ntcp, void *buffer)
 	    if (bitmap_bit_value(v10p->v10_bitmap, ntcp->nc_curblock)) {
 		/* block is valid */
 		if ((error = seek2cluster(ntcp, ntcp->nc_curblock)) == 0) {
-		    u_int64_t r_size = -1;
+		    uint64_t r_size = -1;
 
 		    (void) (*ntcp->nc_sysdep->sys_read)
 			(ntcp->nc_fd, buffer, ntcp->nc_head.cluster_size,
@@ -727,7 +727,7 @@ ntfsclone_verify_common(void *rp, int full)
     nc_context_t *ntcp = (nc_context_t *) rp;
 
     if (NTCTX_OPEN(ntcp)) {
-	u_int64_t r_size;
+	uint64_t r_size;
 
 	/*
 	 * Read the header.
@@ -836,7 +836,7 @@ ntfsclone_blockcount(void *rp)
  * ntfsclone_seek	- Seek to a particular block.
  */
 int
-ntfsclone_seek(void *rp, u_int64_t blockno)
+ntfsclone_seek(void *rp, uint64_t blockno)
 {
     int error = EINVAL;
     nc_context_t *ntcp = (nc_context_t *) rp;
@@ -855,7 +855,7 @@ ntfsclone_seek(void *rp, u_int64_t blockno)
 /*
  * ntfsclone_tell	- Obtain the current position.
  */
-u_int64_t
+uint64_t
 ntfsclone_tell(void *rp)
 {
     nc_context_t *ntcp = (nc_context_t *) rp;
@@ -867,12 +867,12 @@ ntfsclone_tell(void *rp)
  * ntfsclone_readblocks	- Read blocks from the current position.
  */
 int
-ntfsclone_readblocks(void *rp, void *buffer, u_int64_t nblocks)
+ntfsclone_readblocks(void *rp, void *buffer, uint64_t nblocks)
 {
     int error = EINVAL;
     nc_context_t *ntcp = (nc_context_t *) rp;
     if (NTCTX_READREADY(ntcp)) {
-	u_int64_t bindex;
+	uint64_t bindex;
 	void *cbp = buffer;
 
 	/*
@@ -905,13 +905,13 @@ ntfsclone_block_used(void *rp)
  * ntfsclone_writeblocks	- Write blocks to the current position.
  */
 int
-ntfsclone_writeblocks(void *rp, void *buffer, u_int64_t nblocks)
+ntfsclone_writeblocks(void *rp, void *buffer, uint64_t nblocks)
 {
     int error = EINVAL;
     nc_context_t *ntcp = (nc_context_t *) rp;
 
     if (NTCTX_WRITEABLE(ntcp)) {
-	u_int64_t bindex;
+	uint64_t bindex;
 	void *cbp = buffer;
 
 	/*

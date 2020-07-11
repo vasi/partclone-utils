@@ -86,7 +86,7 @@ typedef struct version_dispatch_table {
     int		(*version_init)(pc_context_t *pcp);
     int		(*version_verify)(pc_context_t *pcp);
     int		(*version_finish)(pc_context_t *pcp);
-    int		(*version_seek)(pc_context_t *pcp, u_int64_t block);
+    int		(*version_seek)(pc_context_t *pcp, uint64_t block);
     int		(*version_readblock)(pc_context_t *pcp, void *buffer);
     int		(*version_blockused)(pc_context_t *pcp);
     int		(*version_writeblock)(pc_context_t *pcp, void *buffer);
@@ -114,11 +114,11 @@ static const char cmagicstr[] = "BiTmAgIc";
  */
 typedef struct version_1_context {
     unsigned char	*v1_bitmap;		/* Usage bitmap */
-    u_int64_t		*v1_sumcount;		/* Precalculated indices */
-    u_int64_t		v1_nvbcount;		/* Preceding valid blocks */
-    u_int32_t		v1_crc_tab32[CRC_TABLE_LEN];
+    uint64_t		*v1_sumcount;		/* Precalculated indices */
+    uint64_t		v1_nvbcount;		/* Preceding valid blocks */
+    uint32_t		v1_crc_tab32[CRC_TABLE_LEN];
 						/* Precalculated CRC table */
-    u_int16_t		v1_bitmap_factor;	/* log2(entries)/index */
+    uint16_t		v1_bitmap_factor;	/* log2(entries)/index */
 } v1_context_t;
 
 /*
@@ -167,7 +167,7 @@ v1_init(pc_context_t *pcp)
 	     */
 	    for (i=0; i<CRC_TABLE_LEN; i++) {
 		int j;
-		u_int32_t init_crc = (u_int32_t) i;
+		uint32_t init_crc = (uint32_t) i;
 		for (j=0; j<CRC_UNIT_BITS; j++) {
 		    init_crc = (init_crc & 0x00000001L) ?
 			(init_crc >> 1) ^ 0xEDB88320L :
@@ -192,12 +192,12 @@ precalculate_sumcount(pc_context_t *pcp)
          (&v1p->v1_sumcount,
           ((pcp->pc_head.totalblock >>
           v1p->v1_bitmap_factor)+1) *
-          sizeof(u_int64_t))) == 0) {
+          sizeof(uint64_t))) == 0) {
 	    /*
 	     * Precalculate the count of preceding valid blocks
 	     * for every 1k blocks.
 	     */
-	    u_int64_t i, nset = 0;
+	    uint64_t i, nset = 0;
 	    for (i=0; i<pcp->pc_head.totalblock; i++) {
 		if ((i & ((1<<v1p->v1_bitmap_factor)-1)) == 0) {
 		    v1p->v1_sumcount[i>>v1p->v1_bitmap_factor] =
@@ -266,12 +266,12 @@ v1_verify(pc_context_t *pcp)
 	    if ((error = (*pcp->pc_sysdep->sys_malloc)
 		 (&v1p->v1_bitmap, 
 		  sizeof(unsigned char) * pcp->pc_head.totalblock)) == 0) {
-		u_int64_t r_size;
+		uint64_t r_size;
 
 		(void) (*pcp->pc_sysdep->sys_seek)(pcp->pc_fd,
 						   sizeof(pcp->pc_head_v1),
 						   SYSDEP_SEEK_ABSOLUTE,
-						   (u_int64_t *) NULL);
+						   (uint64_t *) NULL);
 		if (((error = 
 		      (*pcp->pc_sysdep->sys_read)(pcp->pc_fd,
 						  v1p->v1_bitmap,
@@ -331,13 +331,13 @@ v1_finish(pc_context_t *pcp)
  * Update the number of preceding valid blocks.
  */
 static int
-v1_seek(pc_context_t *pcp, u_int64_t blockno)
+v1_seek(pc_context_t *pcp, uint64_t blockno)
 {
     int error = EINVAL;
 
     if (PCTX_HAVE_VERDEP(pcp)) {
 	v1_context_t *v1p = (v1_context_t *) pcp->pc_verdep;
-	u_int64_t pbn;
+	uint64_t pbn;
 
 	/*
 	 * Starting with the hint that is nearest, start calculating
@@ -362,7 +362,7 @@ v1_seek(pc_context_t *pcp, u_int64_t blockno)
  *			  block.
  */
 static inline int64_t
-rblock2offset(pc_context_t *pcp, u_int64_t rbnum)
+rblock2offset(pc_context_t *pcp, uint64_t rbnum)
 {
     return pcp->pc_head.head_size+
            (rbnum*(pcp->pc_head.block_size))+
@@ -374,11 +374,11 @@ rblock2offset(pc_context_t *pcp, u_int64_t rbnum)
  * it's a CRC of the first byte, iterated "size" number of times.  This is
  * to mimic the behavior of partclone (ech).
  */
-static inline u_int32_t 
-v1_crc32(v1_context_t *v1p, u_int32_t crc, char *buf, size_t size)
+static inline uint32_t 
+v1_crc32(v1_context_t *v1p, uint32_t crc, char *buf, size_t size)
 {
     size_t s;
-    u_int32_t tmp;
+    uint32_t tmp;
 
     for (s=0; s<size; s++) {
 	/*
@@ -388,7 +388,7 @@ v1_crc32(v1_context_t *v1p, u_int32_t crc, char *buf, size_t size)
 	 * by partclone.
 	 */
 	char c = buf[0];
-	tmp = crc ^ (((u_int32_t) c) & 0x000000ffL);
+	tmp = crc ^ (((uint32_t) c) & 0x000000ffL);
 	crc = (crc >> 8) ^ v1p->v1_crc_tab32[ tmp & 0xff ];
     }
     return(crc);
@@ -421,8 +421,8 @@ v1_readblock(pc_context_t *pcp, void *buffer)
 		int64_t boffs = rblock2offset(pcp, v1p->v1_nvbcount);
 		if ((error = (*pcp->pc_sysdep->sys_seek)
 		     (pcp->pc_fd, boffs, SYSDEP_SEEK_ABSOLUTE, 
-		      (u_int64_t *) NULL)) == 0) {
-		    u_int64_t r_size;
+		      (uint64_t *) NULL)) == 0) {
+		    uint64_t r_size;
 		    (void) (*pcp->pc_sysdep->sys_read)(pcp->pc_fd,
 						       buffer,
 						       pcp->pc_head.block_size,
@@ -553,12 +553,12 @@ v2_verify(pc_context_t *pcp)
 	    if ((error = (*pcp->pc_sysdep->sys_malloc)
 		 (&v1p->v1_bitmap,
 		  sizeof(unsigned char) * pcp->pc_head.totalblock)) == 0) {
-		u_int64_t r_size;
+		uint64_t r_size;
 
 		(void) (*pcp->pc_sysdep->sys_seek)(pcp->pc_fd,
 						   sizeof(pcp->pc_head_v2),
 						   SYSDEP_SEEK_ABSOLUTE,
-						   (u_int64_t *) NULL);
+						   (uint64_t *) NULL);
 
 	    if ((error = (*pcp->pc_sysdep->sys_malloc)
 		 (&bitmap,
@@ -710,7 +710,7 @@ partclone_verify(void *rp)
     pc_context_t *pcp = (pc_context_t *) rp;
 
     if (PCTX_OPEN(pcp)) {
-	u_int64_t r_size;
+	uint64_t r_size;
 
 	/*
 	 * Read the header.
@@ -802,7 +802,7 @@ partclone_blockcount(void *rp)
  * partclone_seek	- Seek to a particular block.
  */
 int
-partclone_seek(void *rp, u_int64_t blockno)
+partclone_seek(void *rp, uint64_t blockno)
 {
     int error = EINVAL;
     pc_context_t *pcp = (pc_context_t *) rp;
@@ -821,7 +821,7 @@ partclone_seek(void *rp, u_int64_t blockno)
 /*
  * partclone_tell	- Obtain the current position.
  */
-u_int64_t
+uint64_t
 partclone_tell(void *rp)
 {
     pc_context_t *pcp = (pc_context_t *) rp;
@@ -833,12 +833,12 @@ partclone_tell(void *rp)
  * partclone_readblocks	- Read blocks from the current position.
  */
 int
-partclone_readblocks(void *rp, void *buffer, u_int64_t nblocks)
+partclone_readblocks(void *rp, void *buffer, uint64_t nblocks)
 {
     int error = EINVAL;
     pc_context_t *pcp = (pc_context_t *) rp;
     if (PCTX_READREADY(pcp)) {
-	u_int64_t bindex;
+	uint64_t bindex;
 	void *cbp = buffer;
 
 	/*
@@ -871,13 +871,13 @@ partclone_block_used(void *rp)
  * partclone_writeblocks	- Write blocks to the current position.
  */
 int
-partclone_writeblocks(void *rp, void *buffer, u_int64_t nblocks)
+partclone_writeblocks(void *rp, void *buffer, uint64_t nblocks)
 {
     int error = EINVAL;
     pc_context_t *pcp = (pc_context_t *) rp;
 
     if (PCTX_WRITEABLE(pcp)) {
-	u_int64_t bindex;
+	uint64_t bindex;
 	void *cbp = buffer;
 
 	/*

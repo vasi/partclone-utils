@@ -29,11 +29,11 @@ int partclone_close(void *rp);
 int partclone_verify(void *rp);
 int64_t partclone_blocksize(void *rp);
 int64_t partclone_blockcount(void *rp);
-int partclone_seek(void *rp, u_int64_t blockno);
-u_int64_t partclone_tell(void *rp);
-int partclone_readblocks(void *rp, void *buffer, u_int64_t nblocks);
+int partclone_seek(void *rp, uint64_t blockno);
+uint64_t partclone_tell(void *rp);
+int partclone_readblocks(void *rp, void *buffer, uint64_t nblocks);
 int partclone_block_used(void *rp);
-int partclone_writeblocks(void *rp, void *buffer, u_int64_t nblocks);
+int partclone_writeblocks(void *rp, void *buffer, uint64_t nblocks);
 int partclone_sync(void *rp);
 
 typedef struct libpc_context {
@@ -59,8 +59,8 @@ typedef struct libpc_context {
         unsigned long long device_size;
         unsigned int blocks_per_checksum;
     } pc_head;
-    u_int64_t		pc_curblock;	/* Current position */
-    u_int32_t		pc_flags;	/* Handle flags */
+    uint64_t		pc_curblock;	/* Current position */
+    uint32_t		pc_flags;	/* Handle flags */
     sysdep_open_mode_t	pc_omode;	/* Open mode */
 } pc_context_t;
 

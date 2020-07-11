@@ -15,14 +15,14 @@
 #define	_CHANGEFILE_H_	1
 #include <sys/types.h>
 #include "sysdep_int.h"
-int cf_init(const char *, const sysdep_dispatch_t *, u_int64_t, u_int64_t,
+int cf_init(const char *, const sysdep_dispatch_t *, uint64_t, uint64_t,
 	    void **);
-int cf_create(const char *, const sysdep_dispatch_t *, u_int64_t, u_int64_t,
+int cf_create(const char *, const sysdep_dispatch_t *, uint64_t, uint64_t,
 	      void **);
 int cf_verify(void *);
 int cf_sync(void *);
 int cf_finish(void *);
-int cf_seek(void *, u_int64_t);
+int cf_seek(void *, uint64_t);
 int cf_readblock(void *, void *);
 int cf_blockused(void *);
 int cf_writeblock(void *, void *);

@@ -33,7 +33,7 @@ typedef struct image_handle {
     image_dispatch_t	*i_dispatch;
     sysdep_dispatch_t	*i_sysdep;
     void		*i_type_handle;
-    u_int32_t		i_magic;
+    uint32_t		i_magic;
 } image_handle_t;
 
 int 
@@ -118,7 +118,7 @@ image_blockcount(void *rp)
 }
 
 int
-image_seek(void *rp, u_int64_t blockno)
+image_seek(void *rp, uint64_t blockno)
 {
     image_handle_t *ihp = (image_handle_t *) rp;
     int error = EINVAL;
@@ -128,7 +128,7 @@ image_seek(void *rp, u_int64_t blockno)
     return(error);
 }
 
-u_int64_t
+uint64_t
 image_tell(void *rp)
 {
     image_handle_t *ihp = (image_handle_t *) rp;
@@ -137,7 +137,7 @@ image_tell(void *rp)
 }
 
 int
-image_readblocks(void *rp, void *buffer, u_int64_t nblocks)
+image_readblocks(void *rp, void *buffer, uint64_t nblocks)
 {
     image_handle_t *ihp = (image_handle_t *) rp;
     int error = EINVAL;
@@ -157,7 +157,7 @@ image_block_used(void *rp)
 }
 
 int
-image_writeblocks(void *rp, void *buffer, u_int64_t nblocks)
+image_writeblocks(void *rp, void *buffer, uint64_t nblocks)
 {
     image_handle_t *ihp = (image_handle_t *) rp;
     int error = EINVAL;

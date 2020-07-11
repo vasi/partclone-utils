@@ -31,11 +31,11 @@
 
 typedef struct version_1_context {
     unsigned char	*v1_bitmap;		/* Usage bitmap */
-    u_int64_t		*v1_sumcount;		/* Precalculated indices */
-    u_int64_t		v1_nvbcount;		/* Preceding valid blocks */
+    uint64_t		*v1_sumcount;		/* Precalculated indices */
+    uint64_t		v1_nvbcount;		/* Preceding valid blocks */
     unsigned long	v1_crc_tab32[CRC_TABLE_LEN];
 						/* Precalculated CRC table */
-    u_int16_t		v1_bitmap_factor;	/* log2(entries)/index */
+    uint16_t		v1_bitmap_factor;	/* log2(entries)/index */
 } v1_context_t;
 
 int
@@ -51,12 +51,12 @@ main(int argc, char *argv[])
 
     if ((error = partclone_open(argv[i], (char *) NULL, SYSDEP_OPEN_RO,
 				&posix_dispatch, &pctx)) == 0) {
-      u_int64_t bmscanned = 0, unset = 0, set = 0, strange = 0;
-      u_int64_t lastset = 0;
+      uint64_t bmscanned = 0, unset = 0, set = 0, strange = 0;
+      uint64_t lastset = 0;
       if (((error = partclone_verify(pctx)) == 0) || dontcare) {
 	pc_context_t *p = (pc_context_t *) pctx;
 	v1_context_t *v = (v1_context_t *) p->pc_verdep;
-	u_int64_t bmi;
+	uint64_t bmi;
 	unsigned char *iob;
 
 	if (dontcare && error)

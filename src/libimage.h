@@ -32,11 +32,11 @@ typedef struct image_type_dispatch {
     int (*verify)(void *rp);
     int64_t (*blocksize)(void *rp);
     int64_t (*blockcount)(void *rp);
-    int (*seek)(void *rp, u_int64_t blockno);
-    u_int64_t (*tell)(void *rp);
-    int (*readblocks)(void *rp, void *buffer, u_int64_t nblocks);
+    int (*seek)(void *rp, uint64_t blockno);
+    uint64_t (*tell)(void *rp);
+    int (*readblocks)(void *rp, void *buffer, uint64_t nblocks);
     int (*block_used)(void *rp);
-    int (*writeblocks)(void *rp, void *buffer, u_int64_t nblocks);
+    int (*writeblocks)(void *rp, void *buffer, uint64_t nblocks);
     int (*sync)(void *rp);
 } image_dispatch_t;
 
@@ -51,11 +51,11 @@ void image_tolerant_mode(void *rp);
 int image_verify(void *rp);
 int64_t image_blocksize(void *rp);
 int64_t image_blockcount(void *rp);
-int image_seek(void *rp, u_int64_t blockno);
-u_int64_t image_tell(void *rp);
-int image_readblocks(void *rp, void *buffer, u_int64_t nblocks);
+int image_seek(void *rp, uint64_t blockno);
+uint64_t image_tell(void *rp);
+int image_readblocks(void *rp, void *buffer, uint64_t nblocks);
 int image_block_used(void *rp);
-int image_writeblocks(void *rp, void *buffer, u_int64_t nblocks);
+int image_writeblocks(void *rp, void *buffer, uint64_t nblocks);
 int image_sync(void *rp);
 
 #endif	/* _LIBIMAGE_H_ */

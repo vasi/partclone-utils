@@ -38,27 +38,27 @@ typedef struct libntfsclone_context {
     const sysdep_dispatch_t
 			*nc_sysdep;	/* System-specific routines */
     image_hdr		nc_head;	/* Image header */
-    u_int64_t		nc_curblock;	/* Current position */
-    u_int32_t		nc_flags;	/* Handle flags */
+    uint64_t		nc_curblock;	/* Current position */
+    uint32_t		nc_flags;	/* Handle flags */
     sysdep_open_mode_t	nc_omode;	/* Open mode */
 } nc_context_t;
 
 typedef struct version_10_context {
     unsigned char	*v10_bitmap;		/* Usage bitmap */
     off_t		*v10_bucket_offset;	/* Precalculated indices */
-    u_int64_t		v10_current_bucket;	/* Current bucket */
-    u_int16_t		v10_bsfcount;		/* Preceding free blocks */
-    u_int16_t		v10_bucket_factor;	/* log2(entries)/index */
+    uint64_t		v10_current_bucket;	/* Current bucket */
+    uint16_t		v10_bsfcount;		/* Preceding free blocks */
+    uint16_t		v10_bucket_factor;	/* log2(entries)/index */
 } v10_context_t;
 
 /*
  * Inline bitmap manipulation routines.
  */
 static inline void
-bitmap_set_bit(unsigned char *bitmap, u_int64_t bit, u_int32_t value)
+bitmap_set_bit(unsigned char *bitmap, uint64_t bit, uint32_t value)
 {
-    u_int64_t boffs = bit / 8;
-    u_int8_t bdisp = bit & 7;
+    uint64_t boffs = bit / 8;
+    uint8_t bdisp = bit & 7;
     unsigned char mask = 1 << bdisp;
     if (value) {
 	bitmap[boffs] |= mask;
@@ -67,11 +67,11 @@ bitmap_set_bit(unsigned char *bitmap, u_int64_t bit, u_int32_t value)
     }
 }
 
-static inline u_int32_t
-bitmap_bit_value(unsigned char *bitmap, u_int64_t bit)
+static inline uint32_t
+bitmap_bit_value(unsigned char *bitmap, uint64_t bit)
 {
-    u_int64_t boffs = bit / 8;
-    u_int8_t bdisp = bit & 7;
+    uint64_t boffs = bit / 8;
+    uint8_t bdisp = bit & 7;
     unsigned char mask = 1 << bdisp;
     return ((bitmap[boffs] & mask) ? 1 : 0);
 }
@@ -89,12 +89,12 @@ main(int argc, char *argv[])
 
     if ((error = ntfsclone_open(argv[i], (char *) NULL, SYSDEP_OPEN_RO,
 				&posix_dispatch, &ntctx)) == 0) {
-      u_int64_t bmscanned = 0, unset = 0, set = 0, strange = 0;
-      u_int64_t lastset = 0;
+      uint64_t bmscanned = 0, unset = 0, set = 0, strange = 0;
+      uint64_t lastset = 0;
       if (((error = ntfsclone_verify(ntctx)) == 0) || dontcare) {
 	nc_context_t *p = (nc_context_t *) ntctx;
 	v10_context_t *v = (v10_context_t *) p->nc_verdep;
-	u_int64_t bmi;
+	uint64_t bmi;
 	unsigned char *iob;
 
 	if (dontcare && error)

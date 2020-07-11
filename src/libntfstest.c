@@ -41,7 +41,7 @@ main(int argc, char *argv[])
 	char outfile[1024];
 	size_t bsize = ntfsclone_blocksize(pctx);
 	size_t btotal = ntfsclone_blockcount(pctx);
-	u_int64_t freeblock = 0;
+	uint64_t freeblock = 0;
 	unsigned char *iobuf = (unsigned char *) malloc(bsize);
 	printf("%s: open success, blocksize is %zu, nblocks is %zu\n", argv[i], 
 	       bsize, btotal);
@@ -102,7 +102,7 @@ main(int argc, char *argv[])
 	   */
 	  if (freeblock) {
 	      char *iostring = "hello kitty";
-	      u_int64_t iooffset = 23;
+	      uint64_t iooffset = 23;
 	      char cfname[1024];
 	      memset(iobuf, 0, bsize);
 	      memcpy(&iobuf[iooffset], iostring, strlen(iostring));

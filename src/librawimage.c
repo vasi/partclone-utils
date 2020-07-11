@@ -43,10 +43,10 @@ typedef struct libraw_context {
     void		*raw_cf_handle;	/* Change file handle */
     const sysdep_dispatch_t
 			*raw_sysdep;	/* System-specific routines */
-    u_int64_t		raw_blocksize;	/* block size */
-    u_int64_t		raw_totalblocks; /* total number of blocks */
-    u_int64_t		raw_curblock;	/* Current position */
-    u_int32_t		raw_flags;	/* Handle flags */
+    uint64_t		raw_blocksize;	/* block size */
+    uint64_t		raw_totalblocks; /* total number of blocks */
+    uint64_t		raw_curblock;	/* Current position */
+    uint32_t		raw_flags;	/* Handle flags */
     sysdep_open_mode_t	raw_omode;	/* Open mode */
 } raw_context_t;
 
@@ -81,7 +81,7 @@ typedef struct libraw_context {
  *			  block.
  */
 static inline int64_t
-rblock2offset(raw_context_t *rcp, u_int64_t rbnum)
+rblock2offset(raw_context_t *rcp, uint64_t rbnum)
 {
     return(rbnum * rcp->raw_blocksize);
 }
@@ -137,7 +137,7 @@ rawimage_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
 	    if ((error = (*rcp->raw_sysdep->sys_open)(&rcp->raw_fd,
 						     path,
 						     SYSDEP_OPEN_RO)) == 0) {
-		u_int64_t filesize;
+		uint64_t filesize;
 		if ((error = (*rcp->raw_sysdep->sys_file_size)(rcp->raw_fd,
 							       &filesize)
 			) == 0) {
@@ -250,7 +250,7 @@ rawimage_blockcount(void *rp)
  * rawimage_seek	- Seek to a particular block.
  */
 int
-rawimage_seek(void *rp, u_int64_t blockno)
+rawimage_seek(void *rp, uint64_t blockno)
 {
     int error = EINVAL;
     raw_context_t *rcp = (raw_context_t *) rp;
@@ -265,7 +265,7 @@ rawimage_seek(void *rp, u_int64_t blockno)
 /*
  * rawimage_tell	- Obtain the current position.
  */
-u_int64_t
+uint64_t
 rawimage_tell(void *rp)
 {
     raw_context_t *rcp = (raw_context_t *) rp;
@@ -277,14 +277,14 @@ rawimage_tell(void *rp)
  * rawimage_readblocks	- Read blocks from the current position.
  */
 int
-rawimage_readblocks(void *rp, void *buffer, u_int64_t nblocks)
+rawimage_readblocks(void *rp, void *buffer, uint64_t nblocks)
 {
     int error = EINVAL;
     raw_context_t *rcp = (raw_context_t *) rp;
     if (RAWCTX_READREADY(rcp)) {
-	u_int64_t nread;
+	uint64_t nread;
 	if (rcp->raw_cf_handle) {
-	    u_int64_t bindex;
+	    uint64_t bindex;
 	    void *cbp = buffer;
 
 	    for (bindex = 0; bindex < nblocks; bindex++) {
@@ -293,7 +293,7 @@ rawimage_readblocks(void *rp, void *buffer, u_int64_t nblocks)
 		    if ((error == ENXIO) &&
 			(error = (*rcp->raw_sysdep->sys_seek)
 			 (rcp->raw_fd, rblock2offset(rcp, rcp->raw_curblock),
-			  SYSDEP_SEEK_ABSOLUTE, (u_int64_t *) NULL)) == 0) {
+			  SYSDEP_SEEK_ABSOLUTE, (uint64_t *) NULL)) == 0) {
 			error = (*rcp->raw_sysdep->sys_read)
 			    (rcp->raw_fd, cbp, rcp->raw_blocksize, &nread);
 		    }
@@ -307,7 +307,7 @@ rawimage_readblocks(void *rp, void *buffer, u_int64_t nblocks)
 	} else {
 	    if ((error = (*rcp->raw_sysdep->sys_seek)
 		 (rcp->raw_fd, rblock2offset(rcp, rcp->raw_curblock),
-		  SYSDEP_SEEK_ABSOLUTE, (u_int64_t *) NULL)) == 0) {
+		  SYSDEP_SEEK_ABSOLUTE, (uint64_t *) NULL)) == 0) {
 		error = (*rcp->raw_sysdep->sys_read)
 		    (rcp->raw_fd, buffer, nblocks * rcp->raw_blocksize, &nread);
 	    }
@@ -331,7 +331,7 @@ rawimage_block_used(void *rp)
  * rawimage_writeblocks	- Write blocks to the current position.
  */
 int
-rawimage_writeblocks(void *rp, void *buffer, u_int64_t nblocks)
+rawimage_writeblocks(void *rp, void *buffer, uint64_t nblocks)
 {
     int error = EINVAL;
     raw_context_t *rcp = (raw_context_t *) rp;
@@ -368,7 +368,7 @@ rawimage_writeblocks(void *rp, void *buffer, u_int64_t nblocks)
 	}
 	if (!error) {
 	    void *cbp = buffer;
-	    u_int64_t bindex;
+	    uint64_t bindex;
 
 	    for (bindex = 0; bindex < nblocks; bindex++) {
 		cf_seek(rcp->raw_cf_handle, rcp->raw_curblock);

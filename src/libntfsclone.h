@@ -26,11 +26,11 @@ int ntfsclone_close(void *rp);
 int ntfsclone_verify(void *rp);
 int64_t ntfsclone_blocksize(void *rp);
 int64_t ntfsclone_blockcount(void *rp);
-int ntfsclone_seek(void *rp, u_int64_t blockno);
-u_int64_t ntfsclone_tell(void *rp);
-int ntfsclone_readblocks(void *rp, void *buffer, u_int64_t nblocks);
+int ntfsclone_seek(void *rp, uint64_t blockno);
+uint64_t ntfsclone_tell(void *rp);
+int ntfsclone_readblocks(void *rp, void *buffer, uint64_t nblocks);
 int ntfsclone_block_used(void *rp);
-int ntfsclone_writeblocks(void *rp, void *buffer, u_int64_t nblocks);
+int ntfsclone_writeblocks(void *rp, void *buffer, uint64_t nblocks);
 int ntfsclone_sync(void *rp);
 
 #endif	/* _LIBNTFSCLONE_H_ */

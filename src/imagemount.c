@@ -76,10 +76,10 @@ typedef struct nbd_context {
     int		svc_rdonly;
     int		svc_tolerant;
     int		svc_raw_available;
-    u_int64_t	svc_blocksize;
-    u_int64_t	svc_blockcount;
-    u_int64_t	svc_offsetmask;
-    u_int64_t	svc_blockmask;
+    uint64_t	svc_blocksize;
+    uint64_t	svc_blockcount;
+    uint64_t	svc_offsetmask;
+    uint64_t	svc_blockmask;
     pid_t	svc_toreap;
 } nbd_context_t;
 
@@ -424,15 +424,15 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 	     */
 	    off_t offset = NTOHLL(request.from);
 	    size_t length = ntohl(request.len);
-	    u_int64_t startblockoffs = offset & ncp->svc_blockmask;
-	    u_int64_t sboffs = offset & ncp->svc_offsetmask;
-	    u_int64_t endblockoffs = (offset + length - 1) &
+	    uint64_t startblockoffs = offset & ncp->svc_blockmask;
+	    uint64_t sboffs = offset & ncp->svc_offsetmask;
+	    uint64_t endblockoffs = (offset + length - 1) &
 		ncp->svc_blockmask;
-	    u_int64_t eboffs = (offset + length - 1) & ncp->svc_offsetmask;
-	    u_int64_t startblock = startblockoffs / ncp->svc_blocksize;
-	    u_int64_t blockcount = (endblockoffs - startblockoffs) / 
+	    uint64_t eboffs = (offset + length - 1) & ncp->svc_offsetmask;
+	    uint64_t startblock = startblockoffs / ncp->svc_blocksize;
+	    uint64_t blockcount = (endblockoffs - startblockoffs) / 
 		ncp->svc_blocksize;
-	    u_int64_t req_readbuf;
+	    uint64_t req_readbuf;
 	    
 	    /*
 	     * Adjust block count.
@@ -505,7 +505,7 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx)
 			}
 			if (!error) {
 			    char *rembp = readbuf;
-			    u_int64_t remlen = length;
+			    uint64_t remlen = length;
 			    for ((rembp = readbuf, remlen = length);
 				 !error && remlen;
 				) {

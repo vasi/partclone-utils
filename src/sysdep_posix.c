@@ -105,13 +105,13 @@ posix_close(void *rh)
  *	EINVAL	- Invalid file handle.
  */
 static int
-posix_seek(void *rh, int64_t offset, sysdep_whence_t whence, u_int64_t *resoffp)
+posix_seek(void *rh, int64_t offset, sysdep_whence_t whence, uint64_t *resoffp)
 {
     int *fhp = (int *) rh;
     if (fhp) {
 	off_t poffs = lseek(*fhp, offset, (int) whence);
 	if (resoffp)
-	    *resoffp = (u_int64_t) poffs;
+	    *resoffp = (uint64_t) poffs;
 	return((poffs >= 0) ? 0 : errno);
     } else {
 	return(EINVAL);
@@ -133,7 +133,7 @@ posix_seek(void *rh, int64_t offset, sysdep_whence_t whence, u_int64_t *resoffp)
  *	error	- Otherwise.
  */
 static int
-posix_read(void *rh, void *buf, u_int64_t len, u_int64_t *nr)
+posix_read(void *rh, void *buf, uint64_t len, uint64_t *nr)
 {
     int *fhp = (int *) rh;
     if (fhp) {
@@ -159,7 +159,7 @@ posix_read(void *rh, void *buf, u_int64_t len, u_int64_t *nr)
  *	error	- Otherwise.
  */
 static int
-posix_write(void *rh, void *buf, u_int64_t len, u_int64_t *nw)
+posix_write(void *rh, void *buf, uint64_t len, uint64_t *nw)
 {
     int *fhp = (int *) rh;
     if (fhp) {
@@ -183,7 +183,7 @@ posix_write(void *rh, void *buf, u_int64_t len, u_int64_t *nw)
  *	ENOMEM	- No memory available
  */
 static int
-posix_malloc(void *nmpp, u_int64_t nbytes)
+posix_malloc(void *nmpp, uint64_t nbytes)
 {
     void **xnmp = (void **) nmpp;
     return((xnmp) ? (((*xnmp = malloc(nbytes))) ? 0 : ENOMEM) : EINVAL);
@@ -218,7 +218,7 @@ posix_free(void *mp)
  *  nbytes	- File size.
  */
 static int
-posix_file_size(void *rh, u_int64_t *nbytes)
+posix_file_size(void *rh, uint64_t *nbytes)
 {
     int error = EINVAL;
     int *fhp = (int *) rh;
@@ -226,7 +226,7 @@ posix_file_size(void *rh, u_int64_t *nbytes)
 	struct stat sbuf;
 	if ((error = fstat(*fhp, &sbuf)) == 0) {
 	    if (sbuf.st_size == 0) {
-		u_int64_t curpos;
+		uint64_t curpos;
 		if (!posix_seek(rh, 0, SYSDEP_SEEK_RELATIVE, &curpos)) {
 		    error = posix_seek(rh, 0, SYSDEP_SEEK_END, nbytes);
 		    (void) posix_seek(rh, curpos, SYSDEP_SEEK_ABSOLUTE, NULL);
