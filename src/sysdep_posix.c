@@ -68,7 +68,7 @@ posix_open(void *rhp, const char *p, sysdep_open_mode_t omode)
 }
 
 /*
- * posix_close	- Close a file handle and free pointer.
+ * posix_closex	- Close a file handle and free pointer.
  *
  * Parameters:
  *	rh	- File handle
@@ -79,7 +79,7 @@ posix_open(void *rhp, const char *p, sysdep_open_mode_t omode)
  *	error	- Otherwise.
  */
 static int
-posix_close(void *rh)
+posix_closex(void *rh)
 {
     int *fhp = (int *) rh;
     int error = EINVAL;
@@ -240,6 +240,6 @@ posix_file_size(void *rh, uint64_t *nbytes)
 }
 
 const sysdep_dispatch_t posix_dispatch = 
-{ posix_open, posix_close, posix_seek, posix_read, posix_write, posix_malloc,
+{ posix_open, posix_closex, posix_seek, posix_read, posix_write, posix_malloc,
   posix_free, posix_file_size };
 
