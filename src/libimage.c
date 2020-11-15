@@ -27,6 +27,7 @@ static const image_dispatch_t *known_types[] = {
     &raw_image_type,		/* must be last */
 };
 
+#undef IMAGE_MAGIC
 #define	IMAGE_MAGIC	0xceebee00
 typedef struct image_handle {
     image_dispatch_t	*i_dispatch;
