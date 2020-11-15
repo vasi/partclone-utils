@@ -21,11 +21,6 @@
 #include "changefileint.h"
 
 /*
- * String to append to path to create a change file when none is specified.
- */
-static const char cf_name_append[] = ".cf";
-
-/*
  * cf_init	- Initialize change file handling.
  *
  * Allocate and initialize change file handle.

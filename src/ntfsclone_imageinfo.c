@@ -90,7 +90,7 @@ main(int argc, char *argv[])
     if ((error = ntfsclone_open(argv[i], (char *) NULL, SYSDEP_OPEN_RO,
 				&posix_dispatch, &ntctx)) == 0) {
       u_int64_t bmscanned = 0, unset = 0, set = 0, strange = 0;
-      u_int64_t lastset = 0, laststrange = 0;
+      u_int64_t lastset = 0;
       if (((error = ntfsclone_verify(ntctx)) == 0) || dontcare) {
 	nc_context_t *p = (nc_context_t *) ntctx;
 	v10_context_t *v = (v10_context_t *) p->nc_verdep;

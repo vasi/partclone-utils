@@ -52,7 +52,7 @@ main(int argc, char *argv[])
     if ((error = partclone_open(argv[i], (char *) NULL, SYSDEP_OPEN_RO,
 				&posix_dispatch, &pctx)) == 0) {
       u_int64_t bmscanned = 0, unset = 0, set = 0, strange = 0;
-      u_int64_t lastset = 0, laststrange = 0;
+      u_int64_t lastset = 0;
       if (((error = partclone_verify(pctx)) == 0) || dontcare) {
 	pc_context_t *p = (pc_context_t *) pctx;
 	v1_context_t *v = (v1_context_t *) p->pc_verdep;
@@ -69,7 +69,6 @@ main(int argc, char *argv[])
 	    set++; lastset = bmi; break;
 	  default:
 	    strange++;
-	    laststrange = bmi;
 	    fprintf(stderr, "%s: block %lu (0x%016lx) bitmap %d (0x%02x)?\n", argv[i], bmi, bmi,
 		    v->v1_bitmap[bmi], v->v1_bitmap[bmi]);
 	    anomalies++;

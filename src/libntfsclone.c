@@ -168,7 +168,6 @@ v10_init(nc_context_t *ntcp)
 
     if (NTCTX_VALID(ntcp)) {
 	if ((error = (*ntcp->nc_sysdep->sys_malloc)(&v10p, sizeof(*v10p))) == 0) {
-	    int i;
 	    memset(v10p, 0, sizeof(*v10p));
 	    ntcp->nc_verdep = v10p;
 	    ntcp->nc_flags |= (NC_HAVE_VERDEP|NC_VERSION_INIT);
@@ -260,7 +259,7 @@ v10_verify(nc_context_t *ntcp)
 		nconsecsync = 0;
 		while (!error && (cclust < ntcp->nc_head.nr_clusters)) {
 		    ntfsclone_atom_t ibuf;
-		    u_int64_t rsize, iclust, cfoffs;
+		    u_int64_t rsize, cfoffs;
 		    u_int64_t xcpos;
 		    (void) (*ntcp->nc_sysdep->sys_seek)(ntcp->nc_fd, 0,
 							SYSDEP_SEEK_RELATIVE,

@@ -78,7 +78,7 @@ verify_block(void *cf, u_int64_t offs, u_int64_t index, void *rbuffer,
 
 void
 dump_blocks(cf_header_t *h, u_int64_t *bm, void *cf, void *rw, void *ro) {
-    u_int64_t bi, nread;
+    u_int64_t bi;
     u_int64_t nfound = 0;
     u_int64_t bsize = image_blocksize(rw);
     void *rbuffer = (void *) NULL;
@@ -147,7 +147,8 @@ dump_blocks(cf_header_t *h, u_int64_t *bm, void *cf, void *rw, void *ro) {
 int
 main(int argc, char *argv[])
 {
-    int i, error;
+    int i = 0;
+    int error = 1;
 
     if (argc > 2) {
 	void *cfp;

@@ -77,11 +77,10 @@ verify_block(void *cf, u_int64_t offs, u_int64_t index, void *rbuffer,
 
 void
 dump_blocks(cf_header_t *h, u_int64_t *bm, void *cf) {
-    u_int64_t bi, nread;
+    u_int64_t bi;
     u_int64_t nfound = 0;
     u_int64_t bsize = 0;
     void *rbuffer = (void *) NULL;
-    int error;
     for (bi=0; bi<h->cf_total_blocks; bi++) {
 	if (bm[bi]) {
 	    int good = 0;
@@ -136,7 +135,8 @@ int
 main(int argc, char *argv[])
 {
     void *cfp;
-    int i, error;
+    int i;
+    int error = 1;
 
     for (i=1; i<argc; i++) {
 	if ((error = (*sysdep->sys_open)(&cfp, argv[i], SYSDEP_OPEN_RO)) == 0) {
