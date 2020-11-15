@@ -18,6 +18,8 @@ AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 
+AC_SUBST([AM_CFLAGS], ["-Wall -Wno-unused-function -Wno-cpp"])
+
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
