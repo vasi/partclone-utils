@@ -14,9 +14,13 @@ LOOP=/dev/loop6
 LOOP_IMAGE=/tmp/loop-image
 PARTCLONE_IMAGE=/tmp/partclone-image
 NBD=/dev/nbd1
+PARTCLONE_MOUNT_POINT=/tmp/mount-partclone-image
 
 reset() {
+    mkdir $PARTCLONE_MOUNT_POINT 2>/dev/null || true
     sudo losetup -d $LOOP 2> /dev/null || true
+    sudo umount $PARTCLONE_MOUNT_POINT 2>/dev/null || true
+    sudo nbd-client -d $NBD || true
     sudo pkill imagemount || true
 }
 
@@ -83,16 +87,28 @@ go() {
         reset
 
         dd if=/dev/zero bs=512 count=$NUM_BLOCKS of=$LOOP_IMAGE 2> /dev/null || return 1
+
         sudo losetup $LOOP $LOOP_IMAGE || return 1
         sudo mkfs.$FS $LOOP > /dev/null 2> /dev/null || return 1
 
         sudo rm -f $PARTCLONE_IMAGE
         sudo ~/partclone/$VER/src/partclone.$PC_FS -c -s $LOOP -o $PARTCLONE_IMAGE 2> /dev/null || return 1
 
-        sudo src/imagemount -d $NBD -f $PARTCLONE_IMAGE || return 1
+        sudo src/imagemount -d $NBD -f $PARTCLONE_IMAGE -r
+        if [ $? -ne 0 ]; then
+            echo "imagemount reported error" >&2
+            return 1
+        fi
+
+        sudo mount -o ro $NBD $PARTCLONE_MOUNT_POINT
+        if [ $? -ne 0 ]; then
+            echo "mount reported error" >&2
+            return 1
+        fi
 
         sleep 1
         check_$FS || return 1
+
     }
 
     _go() {
