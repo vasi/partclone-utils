@@ -10,15 +10,13 @@ if [ "$#" -eq 1 ] && [ "$1" == "debug" ]; then
     set -x
 fi
 
-LOOP=/dev/loop6
-LOOP_IMAGE=/tmp/loop-image
+RAW_FS_IMAGE=/tmp/raw-fs-image
 PARTCLONE_IMAGE=/tmp/partclone-image
 NBD=/dev/nbd1
 PARTCLONE_MOUNT_POINT=/tmp/mount-partclone-image
 
 reset() {
     mkdir $PARTCLONE_MOUNT_POINT 2>/dev/null || true
-    sudo losetup -d $LOOP 2> /dev/null || true
     sudo umount $PARTCLONE_MOUNT_POINT 2>/dev/null || true
     sudo nbd-client -d $NBD || true
     sudo pkill imagemount || true
@@ -54,7 +52,7 @@ install_partclone() {
 }
 
 check_generic() {
-    [ x`sudo md5sum $NBD 2> /dev/null | cut -d\  -f1` == x`sudo md5sum $LOOP | cut -d\  -f1` ]
+    [ x`sudo md5sum $NBD 2> /dev/null | cut -d\  -f1` == x`sudo md5sum $RAW_FS_IMAGE | cut -d\  -f1` ]
 }
 
 check_fat() {
@@ -66,16 +64,29 @@ check_f2fs() {
 }
 
 check_ntfs() {
-    local SIZE=`sudo wc -c $LOOP | cut -d\  -f1`
+    local SIZE=`sudo wc -c $RAW_FS_IMAGE | cut -d\  -f1`
     SIZE=$[ SIZE / 4096 - 1 ]
 
     local HASH1=`sudo dd bs=4k count=$SIZE if=$NBD 2> /dev/null | md5sum | cut -d\  -f1`
-    local HASH2=`sudo dd bs=4k count=$SIZE if=$LOOP 2> /dev/null | md5sum | cut -d\  -f1`
+    local HASH2=`sudo dd bs=4k count=$SIZE if=$RAW_FS_IMAGE 2> /dev/null | md5sum | cut -d\  -f1`
     [ x$HASH1 == x$HASH2 ]
 }
 
 check_ext4() {
     check_generic
+}
+
+mkfs() {
+    FS=$1
+    ARGS=""
+    if [ "z$FS" == "zntfs" ]; then
+        ARGS="--force"
+    fi
+    sudo mkfs.$FS $ARGS $RAW_FS_IMAGE > /dev/null 2> /dev/null
+    if [ $? -ne 0 ]; then
+        echo "mkfs.$FS reported error" >&2
+        return 1
+    fi
 }
 
 go() {
@@ -86,13 +97,19 @@ go() {
     __go() {
         reset
 
-        dd if=/dev/zero bs=512 count=$NUM_BLOCKS of=$LOOP_IMAGE 2> /dev/null || return 1
+        dd if=/dev/zero bs=512 count=$NUM_BLOCKS of=$RAW_FS_IMAGE 2> /dev/null || return 1
 
-        sudo losetup $LOOP $LOOP_IMAGE || return 1
-        sudo mkfs.$FS $LOOP > /dev/null 2> /dev/null || return 1
+        mkfs $FS
+        if [ $? -ne 0 ]; then
+            return 1
+        fi
 
         sudo rm -f $PARTCLONE_IMAGE
-        sudo ~/partclone/$VER/src/partclone.$PC_FS -c -s $LOOP -o $PARTCLONE_IMAGE 2> /dev/null || return 1
+        sudo ~/partclone/$VER/src/partclone.$PC_FS --clone --source $RAW_FS_IMAGE --output $PARTCLONE_IMAGE 2> /dev/null 
+        if [ $? -ne 0 ]; then
+            echo "partclone.$PC_FS reported error" >&2
+            return 1
+        fi
 
         sudo src/imagemount -d $NBD -f $PARTCLONE_IMAGE -r
         if [ $? -ne 0 ]; then
