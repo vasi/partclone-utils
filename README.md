@@ -11,4 +11,6 @@ make
 ### Testing
 ```
 ./test.sh
+# For debug print statements run:
+./test.sh debug
 ```

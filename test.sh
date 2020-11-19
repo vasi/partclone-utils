@@ -1,6 +1,14 @@
 #!/bin/bash
+#
+# partclone-utils' imagemount test script
+#
+# Usage: ./test.sh [debug]
 
 set -eu
+
+if [ "$#" -eq 1 ] && [ "$1" == "debug" ]; then
+    set -x
+fi
 
 LOOP=/dev/loop6
 LOOP_IMAGE=/tmp/loop-image
