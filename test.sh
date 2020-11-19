@@ -35,8 +35,8 @@ _install_partclone() {
     git checkout $COMMIT 2> /dev/null
     autoreconf 2> /dev/null || true
     automake --add-missing 2> /dev/null
-    ./configure --enable-ntfs --enable-fat --enable-f2fs > /dev/null 2> /dev/null
-    make -s -C src partclone.ntfs partclone.fat partclone.f2fs 2> /dev/null
+    ./configure --enable-extfs --enable-ntfs --enable-fat --enable-f2fs > /dev/null 2> /dev/null
+    make -s -C src partclone.extfs partclone.ntfs partclone.fat partclone.f2fs 2> /dev/null
     cd -
 }
 
@@ -70,19 +70,24 @@ check_ntfs() {
     [ x$HASH1 == x$HASH2 ]
 }
 
+check_ext4() {
+    check_generic
+}
+
 go() {
     local FS=$1
-    local SIZE=$2
+    local PC_FS=$2
+    local NUM_BLOCKS=$3
 
     __go() {
         reset
 
-        dd if=/dev/zero bs=512 count=$SIZE of=$LOOP_IMAGE 2> /dev/null || return 1
+        dd if=/dev/zero bs=512 count=$NUM_BLOCKS of=$LOOP_IMAGE 2> /dev/null || return 1
         sudo losetup $LOOP $LOOP_IMAGE || return 1
         sudo mkfs.$FS $LOOP > /dev/null 2> /dev/null || return 1
 
         sudo rm -f $PARTCLONE_IMAGE
-        sudo ~/partclone/$VER/src/partclone.$FS -c -s $LOOP -o $PARTCLONE_IMAGE 2> /dev/null || return 1
+        sudo ~/partclone/$VER/src/partclone.$PC_FS -c -s $LOOP -o $PARTCLONE_IMAGE 2> /dev/null || return 1
 
         sudo src/imagemount -d $NBD -f $PARTCLONE_IMAGE || return 1
 
@@ -101,7 +106,7 @@ go() {
             echo -e "${RED}[FAIL]${NC}"
             ERR=1
         fi
-        echo " ver=$VER fs=$FS size=$SIZE"
+        echo " ver=$VER fs=$FS num_blocks=$NUM_BLOCKS"
     }
 
     _go v1
@@ -111,8 +116,8 @@ go() {
 ERR=1
 
 for VER in v1 v2; do
-    for FS in fat f2fs ntfs; do
-        [ -f ~/partclone/$VER/src/partclone.$FS ] || install_partclone
+    for PC_FS in extfs fat f2fs ntfs; do
+        [ -f ~/partclone/$VER/src/partclone.$PC_FS ] || install_partclone
     done
 done
 
@@ -120,11 +125,14 @@ sudo modprobe nbd
 
 ERR=0
 
-go fat 1000
-go fat 999
-go fat 1001
-go f2fs 210048
-go f2fs 210056
-go ntfs 4031
-go ntfs 4032
-go ntfs 4040
+# Note: Based on number of blocks, mkfs.fat is selecting FAT12 (not FAT16 or FAT32).
+go fat  fat   1000
+go fat  fat   999
+go fat  fat   1001
+go f2fs f2fs  210048
+go f2fs f2fs  210056
+go ntfs ntfs  4031
+go ntfs ntfs  4032
+go ntfs ntfs  4040
+go ext4 extfs 20000
+go ext4 extfs 1000
