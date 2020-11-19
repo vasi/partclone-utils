@@ -42,8 +42,8 @@ _install_partclone() {
 
 install_partclone() {
     mkdir -p ~/partclone
-    [ -d ~/partclone/v1 ] || git clone --depth=1 https://github.com/Thomas-Tsai/partclone ~/partclone/v1 2> /dev/null
-    [ -d ~/partclone/v2 ] || git clone --depth=1 ~/partclone/v1 ~/partclone/v2 2> /dev/null
+    [ -d ~/partclone/v1 ] || git clone https://github.com/Thomas-Tsai/partclone ~/partclone/v1 2> /dev/null
+    [ -d ~/partclone/v2 ] || git clone ~/partclone/v1 ~/partclone/v2 2> /dev/null
 
     _install_partclone ~/partclone/v1 0.2.73
     _install_partclone ~/partclone/v2 master
