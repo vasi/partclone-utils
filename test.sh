@@ -92,10 +92,13 @@ go() {
 
     _go() {
         VER=$1
+        GREEN='\033[0;32m'
+        RED='\033[0;31m'
+        NC='\033[0m' # No Color
         if __go; then
-            echo -n "[OK  ]"
+            echo -e "${GREEN}[OK  ]${NC}"
         else
-            echo -n "[FAIL]"
+            echo -e "${RED}[FAIL]${NC}"
             ERR=1
         fi
         echo " ver=$VER fs=$FS size=$SIZE"
