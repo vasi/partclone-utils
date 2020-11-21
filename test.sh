@@ -11,15 +11,29 @@ if [ "$#" -eq 1 ] && [ "$1" == "debug" ]; then
 fi
 
 RAW_FS_IMAGE=/tmp/raw-fs-image
+RAW_FS_IMAGE_MOUNT_POINT=/tmp/mount-raw-fs-image
 PARTCLONE_IMAGE=/tmp/partclone-image
 NBD=/dev/nbd1
 PARTCLONE_MOUNT_POINT=/tmp/mount-partclone-image
+TEST_FILE_SRC=/tmp/test_file
+
+initial_setup() {
+    # Load the Network Block Device kernel module
+    modprobe nbd
+
+    # Create test file
+    sudo sh -c "echo 'This is a test file' > $TEST_FILE_SRC" 
+    TEST_FILE_MD5SUM=`md5sum $TEST_FILE_SRC | awk '{ print $1 }'`
+}
 
 reset() {
     mkdir $PARTCLONE_MOUNT_POINT 2>/dev/null || true
+    mkdir $RAW_FS_IMAGE_MOUNT_POINT 2>/dev/null || true
+    sudo umount $RAW_FS_IMAGE_MOUNT_POINT 2>/dev/null || true
     sudo umount $PARTCLONE_MOUNT_POINT 2>/dev/null || true
-    sudo nbd-client -d $NBD || true
     sudo pkill imagemount || true
+    sudo pkill partclone-nbd || true
+    sudo nbd-client -d $NBD || true
 }
 
 on_exit() {
@@ -89,6 +103,7 @@ mkfs() {
     fi
 }
 
+
 go() {
     local FS=$1
     local PC_FS=$2
@@ -96,40 +111,82 @@ go() {
 
     __go() {
         reset
+        ERROR_MESSAGE=""
+        # Prepare filesystem image
 
         dd if=/dev/zero bs=512 count=$NUM_BLOCKS of=$RAW_FS_IMAGE 2> /dev/null || return 1
-
         mkfs $FS
         if [ $? -ne 0 ]; then
+            ERROR_MESSAGE="Failed to mkfs"
             return 1
         fi
 
+        # Mount the raw fs image as read-write
+        sudo mount $RAW_FS_IMAGE $RAW_FS_IMAGE_MOUNT_POINT
+        if [ $? -ne 0 ]; then
+            ERROR_MESSAGE="mounting raw fs as read/write reported error"
+            return 1
+        fi
+
+        # Copy in the test file
+        sudo cp $TEST_FILE_SRC $RAW_FS_IMAGE_MOUNT_POINT
+        if [ $? -ne 0 ]; then
+            ERROR_MESSAGE="Copying test file into mount point reported error"
+            return 1
+        fi
+
+        # Unmount the raw fs image mount
+        sudo umount $RAW_FS_IMAGE_MOUNT_POINT
+        if [ $? -ne 0 ]; then
+            ERROR_MESSAGE="Unmounting raw fs image mount reported error"
+            return 1
+        fi
+
+        # Create partclone image
         sudo rm -f $PARTCLONE_IMAGE
-        sudo ~/partclone/$VER/src/partclone.$PC_FS --clone --source $RAW_FS_IMAGE --output $PARTCLONE_IMAGE 2> /dev/null 
+        sudo ~/partclone/$VER/src/partclone.$PC_FS --clone --source $RAW_FS_IMAGE --output $PARTCLONE_IMAGE 2>/dev/null 
         if [ $? -ne 0 ]; then
-            echo "partclone.$PC_FS reported error" >&2
+            ERROR_MESSAGE="partclone.$PC_FS reported error"
             return 1
         fi
 
-        sudo src/imagemount -d $NBD -f $PARTCLONE_IMAGE -r
-        if [ $? -ne 0 ]; then
-            echo "imagemount reported error" >&2
-            return 1
+        if [ "z$PROG" == "zpartclone-utils-imagemount" ]; then
+            # Associate the partclone image with an nbd device in read-only mode,
+            # to generate a raw block device of the underlying filesystem.
+            sudo src/imagemount -d $NBD -f $PARTCLONE_IMAGE
+            if [ $? -ne 0 ]; then
+                ERROR_MESSAGE="imagemount reported error"
+                return 1
+            fi
+            sleep 3
         fi
 
+        if [ "z$PROG" == "zpartclone-nbd" ]; then
+            sudo ../partclone-nbd/build/partclone-nbd -c -d $NBD $PARTCLONE_IMAGE >/dev/zero 2>/dev/null &
+            if [ $? -ne 0 ]; then
+                ERROR_MESSAGE="partclone-nbd reported error"
+                return 1
+            fi
+            sleep 3
+        fi
+
+        # Mount the nbd device
         sudo mount -o ro $NBD $PARTCLONE_MOUNT_POINT
         if [ $? -ne 0 ]; then
-            echo "mount reported error" >&2
+            ERROR_MESSAGE="Mount reported error"
             return 1
         fi
 
         sleep 1
-        check_$FS || return 1
-
+        check_$FS
+        if [ $? -ne 0 ]; then
+            ERROR_MESSAGE="The checksum of $NBD was NOT equal to the raw image $RAW_FS_IMAGE."
+        fi
     }
 
     _go() {
         VER=$1
+        PROG=$2
         GREEN='\033[0;32m'
         RED='\033[0;31m'
         NC='\033[0m' # No Color
@@ -139,11 +196,14 @@ go() {
             echo -e "${RED}[FAIL]${NC}"
             ERR=1
         fi
-        echo " ver=$VER fs=$FS num_blocks=$NUM_BLOCKS"
+        echo " ver=$VER prog=$PROG fs=$FS num_blocks=$NUM_BLOCKS"
+        echo " $ERROR_MESSAGE"
     }
 
-    _go v1
-    _go v2
+    for PROG in partclone-utils-imagemount partclone-nbd; do
+        _go v1 $PROG
+        _go v2 $PROG
+    done
 }
 
 ERR=1
@@ -154,7 +214,7 @@ for VER in v1 v2; do
     done
 done
 
-sudo modprobe nbd
+initial_setup
 
 ERR=0
 
