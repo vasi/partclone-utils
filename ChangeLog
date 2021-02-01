@@ -1,3 +1,8 @@
+December 2019	Jason Spangler	jasons@wumple.com
+	Added NBD timeout option "-i timeout" to avoid
+	disconnects on slow dynamic decompressed FUSE mounts
+August 2019	George Prekas	prekgeo@yahoo.com
+	Added support for partclone image format v0002
 March 2014	Paul Park	paul@idealworldinc.com
 	Add raw (dd) image handling.
 	Fix change file handling for multi-block writes.
