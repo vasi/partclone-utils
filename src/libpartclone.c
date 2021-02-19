@@ -364,9 +364,10 @@ v1_seek(pc_context_t *pcp, uint64_t blockno)
 static inline int64_t
 rblock2offset(pc_context_t *pcp, uint64_t rbnum)
 {
-    return pcp->pc_head.head_size+
-           (rbnum*(pcp->pc_head.block_size))+
-           (rbnum/pcp->pc_head.blocks_per_checksum*pcp->pc_head.checksum_size);
+    uint64_t offset = pcp->pc_head.head_size + rbnum * pcp->pc_head.block_size;
+    if (pcp->pc_head.blocks_per_checksum)
+        offset += (rbnum / pcp->pc_head.blocks_per_checksum) * pcp->pc_head.checksum_size;
+    return offset;
 }
 
 /*
