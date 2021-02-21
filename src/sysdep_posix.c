@@ -10,16 +10,16 @@
  * any later version.
  *
  */
-#ifdef	HAVE_CONFIG_H
-#include "config.h"
-#endif	/* HAVE_CONFIG_H */
+#ifdef HAVE_CONFIG_H
+#    include "config.h"
+#endif /* HAVE_CONFIG_H */
+#include "sysdep_posix.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include "sysdep_posix.h"
 
 /*
  * posix_open	- Open a file handle and return a pointer to it.
@@ -34,34 +34,29 @@
  * 	0	- Success
  *	error	- Otherwise (ENOMEM, see errno values of open(2)).
  */
-static const int omode2flags[] = { 
-    0,
-    O_RDONLY|O_LARGEFILE,
-    O_RDWR|O_LARGEFILE,
-    O_WRONLY|O_LARGEFILE,
-    O_RDWR|O_CREAT|O_LARGEFILE
-};
-    
-static int
-posix_open(void *rhp, const char *p, sysdep_open_mode_t omode)
-{
-    int **fhpp = (int **) rhp;
-    int *fhp;
-    int error = ENOMEM;
-    if ((fhp = (int *) malloc(sizeof(int)))) {
-	int flags = omode2flags[(int) omode];
+static const int omode2flags[] = {0, O_RDONLY | O_LARGEFILE,
+                                  O_RDWR | O_LARGEFILE, O_WRONLY | O_LARGEFILE,
+                                  O_RDWR | O_CREAT | O_LARGEFILE};
 
-	*fhp = open(p, flags, 0640);
-	if (*fhp < 0) {
-	    error = errno;
-	    *fhpp = (int *) NULL;
-	    free(fhp);
-	} else {
-	    *fhpp = fhp;
-	    error = 0;
-	}
+static int
+posix_open(void *rhp, const char *p, sysdep_open_mode_t omode) {
+    int **fhpp = (int **)rhp;
+    int * fhp;
+    int   error = ENOMEM;
+    if ((fhp = (int *)malloc(sizeof(int)))) {
+        int flags = omode2flags[(int)omode];
+
+        *fhp = open(p, flags, 0640);
+        if (*fhp < 0) {
+            error = errno;
+            *fhpp = (int *)NULL;
+            free(fhp);
+        } else {
+            *fhpp = fhp;
+            error = 0;
+        }
     }
-    return(error);
+    return (error);
 }
 
 /*
@@ -76,15 +71,14 @@ posix_open(void *rhp, const char *p, sysdep_open_mode_t omode)
  *	error	- Otherwise.
  */
 static int
-posix_closex(void *rh)
-{
-    int *fhp = (int *) rh;
-    int error = EINVAL;
+posix_closex(void *rh) {
+    int *fhp   = (int *)rh;
+    int  error = EINVAL;
     if (fhp) {
-	error = close(*fhp);
-	free(fhp);
+        error = close(*fhp);
+        free(fhp);
     }
-    return(error);
+    return (error);
 }
 
 /*
@@ -102,22 +96,22 @@ posix_closex(void *rh)
  *	EINVAL	- Invalid file handle.
  */
 static int
-posix_seek(void *rh, int64_t offset, sysdep_whence_t whence, uint64_t *resoffp)
-{
-    int *fhp = (int *) rh;
+posix_seek(void *rh, int64_t offset, sysdep_whence_t whence,
+           uint64_t *resoffp) {
+    int *fhp = (int *)rh;
     if (fhp) {
-	off_t poffs = lseek(*fhp, offset, (int) whence);
-	if (resoffp)
-	    *resoffp = (uint64_t) poffs;
-	return((poffs >= 0) ? 0 : errno);
+        off_t poffs = lseek(*fhp, offset, (int)whence);
+        if (resoffp)
+            *resoffp = (uint64_t)poffs;
+        return ((poffs >= 0) ? 0 : errno);
     } else {
-	return(EINVAL);
+        return (EINVAL);
     }
 }
 
 /*
  * posix_read	- Read data from the current offset.
- * 
+ *
  * Parameters:
  *	rh	- File handle.
  *	buf	- Buffer to read into.
@@ -130,20 +124,19 @@ posix_seek(void *rh, int64_t offset, sysdep_whence_t whence, uint64_t *resoffp)
  *	error	- Otherwise.
  */
 static int
-posix_read(void *rh, void *buf, uint64_t len, uint64_t *nr)
-{
-    int *fhp = (int *) rh;
+posix_read(void *rh, void *buf, uint64_t len, uint64_t *nr) {
+    int *fhp = (int *)rh;
     if (fhp) {
-	*nr = read(*fhp, buf, len);
-	return((*nr == len) ? 0 : errno);
+        *nr = read(*fhp, buf, len);
+        return ((*nr == len) ? 0 : errno);
     } else {
-	return(EINVAL);
+        return (EINVAL);
     }
 }
 
 /*
  * posix_write	- Write data at the current offset.
- * 
+ *
  * Parameters:
  *	rh	- File handle.
  *	buf	- Buffer to read into.
@@ -156,14 +149,13 @@ posix_read(void *rh, void *buf, uint64_t len, uint64_t *nr)
  *	error	- Otherwise.
  */
 static int
-posix_write(void *rh, void *buf, uint64_t len, uint64_t *nw)
-{
-    int *fhp = (int *) rh;
+posix_write(void *rh, void *buf, uint64_t len, uint64_t *nw) {
+    int *fhp = (int *)rh;
     if (fhp) {
-	*nw = write(*fhp, buf, len);
-	return((*nw == len) ? 0 : errno);
+        *nw = write(*fhp, buf, len);
+        return ((*nw == len) ? 0 : errno);
     } else {
-	return(EINVAL);
+        return (EINVAL);
     }
 }
 
@@ -180,10 +172,9 @@ posix_write(void *rh, void *buf, uint64_t len, uint64_t *nw)
  *	ENOMEM	- No memory available
  */
 static int
-posix_malloc(void *nmpp, uint64_t nbytes)
-{
-    void **xnmp = (void **) nmpp;
-    return((xnmp) ? (((*xnmp = malloc(nbytes))) ? 0 : ENOMEM) : EINVAL);
+posix_malloc(void *nmpp, uint64_t nbytes) {
+    void **xnmp = (void **)nmpp;
+    return ((xnmp) ? (((*xnmp = malloc(nbytes))) ? 0 : ENOMEM) : EINVAL);
 }
 
 /*
@@ -197,13 +188,12 @@ posix_malloc(void *nmpp, uint64_t nbytes)
  *	EINVAL	- Invalid pointer
  */
 static int
-posix_free(void *mp)
-{
+posix_free(void *mp) {
     if (mp) {
-	free(mp);
-	return(0);
+        free(mp);
+        return (0);
     } else {
-	return(EINVAL);
+        return (EINVAL);
     }
 }
 
@@ -215,28 +205,26 @@ posix_free(void *mp)
  *  nbytes	- File size.
  */
 static int
-posix_file_size(void *rh, uint64_t *nbytes)
-{
-    int error = EINVAL;
-    int *fhp = (int *) rh;
+posix_file_size(void *rh, uint64_t *nbytes) {
+    int  error = EINVAL;
+    int *fhp   = (int *)rh;
     if (fhp) {
-	struct stat sbuf;
-	if ((error = fstat(*fhp, &sbuf)) == 0) {
-	    if (sbuf.st_size == 0) {
-		uint64_t curpos;
-		if (!posix_seek(rh, 0, SYSDEP_SEEK_RELATIVE, &curpos)) {
-		    error = posix_seek(rh, 0, SYSDEP_SEEK_END, nbytes);
-		    (void) posix_seek(rh, curpos, SYSDEP_SEEK_ABSOLUTE, NULL);
-		}
-	    } else {
-		*nbytes = sbuf.st_size;
-	    }
-	}
+        struct stat sbuf;
+        if ((error = fstat(*fhp, &sbuf)) == 0) {
+            if (sbuf.st_size == 0) {
+                uint64_t curpos;
+                if (!posix_seek(rh, 0, SYSDEP_SEEK_RELATIVE, &curpos)) {
+                    error = posix_seek(rh, 0, SYSDEP_SEEK_END, nbytes);
+                    (void)posix_seek(rh, curpos, SYSDEP_SEEK_ABSOLUTE, NULL);
+                }
+            } else {
+                *nbytes = sbuf.st_size;
+            }
+        }
     }
-    return(error);
+    return (error);
 }
 
-const sysdep_dispatch_t posix_dispatch = 
-{ posix_open, posix_closex, posix_seek, posix_read, posix_write, posix_malloc,
-  posix_free, posix_file_size };
-
+const sysdep_dispatch_t posix_dispatch = {
+    posix_open,  posix_closex, posix_seek, posix_read,
+    posix_write, posix_malloc, posix_free, posix_file_size};

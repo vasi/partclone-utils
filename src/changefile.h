@@ -11,14 +11,16 @@
  *
  */
 
-#ifndef	_CHANGEFILE_H_
-#define	_CHANGEFILE_H_	1
-#include <sys/types.h>
+#ifndef _CHANGEFILE_H_
+#define _CHANGEFILE_H_ 1
+
 #include "sysdep_int.h"
+#include <sys/types.h>
+
 int cf_init(const char *, const sysdep_dispatch_t *, uint64_t, uint64_t,
-	    void **);
+            void **);
 int cf_create(const char *, const sysdep_dispatch_t *, uint64_t, uint64_t,
-	      void **);
+              void **);
 int cf_verify(void *);
 int cf_sync(void *);
 int cf_finish(void *);
@@ -26,4 +28,5 @@ int cf_seek(void *, uint64_t);
 int cf_readblock(void *, void *);
 int cf_blockused(void *);
 int cf_writeblock(void *, void *);
-#endif	/* _CHANGEFILE_H_ */
+
+#endif /* _CHANGEFILE_H_ */

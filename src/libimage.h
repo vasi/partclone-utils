@@ -11,12 +11,12 @@
  *
  */
 
-#ifndef	_LIBIMAGE_H_
-#define	_LIBIMAGE_H_	1
-#include <sys/types.h>
+#ifndef _LIBIMAGE_H_
+#define _LIBIMAGE_H_ 1
 #include "sysdep_int.h"
+#include <sys/types.h>
 
-#define	BLOCK_ERROR	-2
+#define BLOCK_ERROR -2
 
 /*
  * Per-image type dispatch table.
@@ -24,9 +24,8 @@
 typedef struct image_type_dispatch {
     const char *type_name;
     int (*probe)(const char *path, const sysdep_dispatch_t *sysdep);
-    int (*open)(const char *path, const char *cfpath, 
-		sysdep_open_mode_t omode, const sysdep_dispatch_t *sysdep,
-		void **rpp);
+    int (*open)(const char *path, const char *cfpath, sysdep_open_mode_t omode,
+                const sysdep_dispatch_t *sysdep, void **rpp);
     int (*close)(void *rp);
     void (*tolerant_mode)(void *rp);
     int (*verify)(void *rp);
@@ -43,19 +42,18 @@ typedef struct image_type_dispatch {
 /*
  * Our interface to everybody else.
  */
-int image_open(const char *path, const char *cfpath, 
-	       sysdep_open_mode_t omode, const sysdep_dispatch_t *sysdep,
-	       int raw_allowed, void **rpp);
-int image_close(void *rp);
+int  image_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
+                const sysdep_dispatch_t *sysdep, int raw_allowed, void **rpp);
+int  image_close(void *rp);
 void image_tolerant_mode(void *rp);
-int image_verify(void *rp);
-int64_t image_blocksize(void *rp);
-int64_t image_blockcount(void *rp);
-int image_seek(void *rp, uint64_t blockno);
+int  image_verify(void *rp);
+int64_t  image_blocksize(void *rp);
+int64_t  image_blockcount(void *rp);
+int      image_seek(void *rp, uint64_t blockno);
 uint64_t image_tell(void *rp);
-int image_readblocks(void *rp, void *buffer, uint64_t nblocks);
-int image_block_used(void *rp);
-int image_writeblocks(void *rp, void *buffer, uint64_t nblocks);
-int image_sync(void *rp);
+int      image_readblocks(void *rp, void *buffer, uint64_t nblocks);
+int      image_block_used(void *rp);
+int      image_writeblocks(void *rp, void *buffer, uint64_t nblocks);
+int      image_sync(void *rp);
 
-#endif	/* _LIBIMAGE_H_ */
+#endif /* _LIBIMAGE_H_ */

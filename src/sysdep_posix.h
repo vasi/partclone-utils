@@ -10,9 +10,9 @@
  * any later version.
  *
  */
-#ifndef	_SYSDEP_POSIX_H_
-#define	_SYSDEP_POSIX_H_	1
+#ifndef _SYSDEP_POSIX_H_
+#define _SYSDEP_POSIX_H_ 1
 #include "sysdep_int.h"
 
 extern const sysdep_dispatch_t posix_dispatch;
-#endif	/* _SYSDEP_POSIX_H_ */
+#endif /* _SYSDEP_POSIX_H_ */

@@ -10,23 +10,22 @@
  * any later version.
  *
  */
-#ifndef	_SYSDEP_INT_H_
-#define	_SYSDEP_INT_H_	1
+#ifndef _SYSDEP_INT_H_
+#define _SYSDEP_INT_H_ 1
 #include <stdint.h>
-
 
 typedef enum sysdep_open_mode {
     SYSDEP_OPEN_NONE = 0,
-    SYSDEP_OPEN_RO = 1,
-    SYSDEP_OPEN_RW = 2,
-    SYSDEP_OPEN_WO = 3,
-    SYSDEP_CREATE = 4
+    SYSDEP_OPEN_RO   = 1,
+    SYSDEP_OPEN_RW   = 2,
+    SYSDEP_OPEN_WO   = 3,
+    SYSDEP_CREATE    = 4
 } sysdep_open_mode_t;
 
 typedef enum sysdep_whence {
     SYSDEP_SEEK_ABSOLUTE = 0,
     SYSDEP_SEEK_RELATIVE = 1,
-    SYSDEP_SEEK_END = 2
+    SYSDEP_SEEK_END      = 2
 } sysdep_whence_t;
 
 typedef struct sysdep_dispatch {
@@ -44,7 +43,7 @@ typedef struct sysdep_dispatch {
      *	ENOMEM	- No memory for handle.
      *	error	- Otherwise.
      */
-    int		(*sys_open)(void *rhp, const char *p, sysdep_open_mode_t mode);
+    int (*sys_open)(void *rhp, const char *p, sysdep_open_mode_t mode);
     /*
      * sys_close	- Close a file handle and free pointer.
      *
@@ -56,7 +55,7 @@ typedef struct sysdep_dispatch {
      *	EINVAL	- Invalid file handle.
      *	error	- Otherwise.
      */
-    int		(*sys_close)(void *rh);
+    int (*sys_close)(void *rh);
     /*
      * sys_seek		- Seek to an offset in a file.
      *
@@ -72,11 +71,11 @@ typedef struct sysdep_dispatch {
      *	EINVAL	- Invalid file handle.
      *	error	- Otherwise.
      */
-    int		(*sys_seek)(void *rh, int64_t offset, sysdep_whence_t whence,
-			    uint64_t *resoffp);
+    int (*sys_seek)(void *rh, int64_t offset, sysdep_whence_t whence,
+                    uint64_t *resoffp);
     /*
      * sys_read		- Read data from the current offset.
-     * 
+     *
      * Parameters:
      *	rh	- File handle.
      *	buf	- Buffer to read into.
@@ -88,10 +87,10 @@ typedef struct sysdep_dispatch {
      *	EINVAL	- Invalid file handle.
      *	error	- Otherwise.
      */
-    int		(*sys_read)(void *rh, void *buf, uint64_t len, uint64_t *nr);
+    int (*sys_read)(void *rh, void *buf, uint64_t len, uint64_t *nr);
     /*
      * sys_write	- Write data at the current offset.
-     * 
+     *
      * Parameters:
      *	rh	- File handle.
      *	buf	- Buffer to read into.
@@ -103,7 +102,7 @@ typedef struct sysdep_dispatch {
      *	EINVAL	- Invalid file handle.
      *	error	- Otherwise.
      */
-    int		(*sys_write)(void *rh, void *buf, uint64_t len, uint64_t *nw);
+    int (*sys_write)(void *rh, void *buf, uint64_t len, uint64_t *nw);
     /*
      * sys_malloc	- Allocate dynamic memory.
      *
@@ -116,7 +115,7 @@ typedef struct sysdep_dispatch {
      *	EINVAL	- Invalid nmpp
      *	ENOMEM	- No memory available
      */
-    int		(*sys_malloc)(void *nmpp, uint64_t nbytes);
+    int (*sys_malloc)(void *nmpp, uint64_t nbytes);
     /*
      * sys_free		- Free dynamic memory.
      *
@@ -127,7 +126,7 @@ typedef struct sysdep_dispatch {
      *	0	- Success
      *	EINVAL	- Invalid pointer
      */
-    int		(*sys_free)(void *mp);
+    int (*sys_free)(void *mp);
     /*
      * sys_file_size	- Determine a file's size.
      *
@@ -135,6 +134,6 @@ typedef struct sysdep_dispatch {
      *  rh	- Open file handle.
      *  nbytes	- File size.
      */
-    int		(*sys_file_size)(void *rh, uint64_t *nbytes);
+    int (*sys_file_size)(void *rh, uint64_t *nbytes);
 } sysdep_dispatch_t;
-#endif	/* _SYSDEP_INT_H_ */
+#endif /* _SYSDEP_INT_H_ */
