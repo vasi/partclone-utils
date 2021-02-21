@@ -1,8 +1,6 @@
 #
 # Makefile.am	- automake input for src
 #
-# @(#) $RCSfile: Makefile.am,v $ $Revision: 1.2 $ (Ideal World, Inc.) $Date: 2010/07/18 15:31:00 $
-#
 # Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or modify it

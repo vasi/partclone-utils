@@ -2,9 +2,6 @@
  * libpartclone.h	- Interfaces to partclone library.
  */
 /*
- * @(#) $RCSfile: libpartclone.h,v $ $Revision: 1.2 $ (Ideal World, Inc.) $Date: 2010/07/17 01:21:27 $
- */
-/*
  * Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify it

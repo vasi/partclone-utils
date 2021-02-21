@@ -1,8 +1,6 @@
 #
 # configure.ac	- autoconf definitions for partclone-utils
 #
-# @(#) $RCSfile: configure.ac,v $ $Revision: 1.4 $ (Ideal World, Inc.) $Date: 2010/08/15 12:40:41 $
-#
 # Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or modify it

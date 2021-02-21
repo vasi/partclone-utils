@@ -2,14 +2,6 @@
  * changefile.c	- Changefile handling.
  */
 /*
- * @(#) $RCSfile: $ $Revision: $ (Ideal World, Inc.) $Date: $
- */
-/*
- * HISTORY
- * $Log: $
- * $EndLog$
- */
-/*
  * Copyright (c) 2011, Ideal World, Inc.  All Rights Reserved.
  */
 #ifdef	HAVE_CONFIG_H

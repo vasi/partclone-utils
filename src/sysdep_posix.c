@@ -2,9 +2,6 @@
  * sysdep_posix.c	- System-dependent interface for POSIX user-mode.
  */
 /*
- * @(#) $RCSfile: sysdep_posix.c,v $ $Revision: 1.3 $ (Ideal World, Inc.) $Date: 2010/07/17 20:47:17 $
- */
-/*
  * Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify it

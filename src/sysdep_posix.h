@@ -2,9 +2,6 @@
  * sysdep_posix.h	- POSIX system dependent module interface.
  */
 /*
- * @(#) $RCSfile: sysdep_posix.h,v $ $Revision: 1.1 $ (Ideal World, Inc.) $Date: 2010/07/14 22:36:35 $
- */
-/*
  * Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify it

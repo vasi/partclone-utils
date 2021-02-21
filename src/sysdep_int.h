@@ -2,9 +2,6 @@
  * sysdep_int.h	- System-dependent interfaces.
  */
 /*
- * @(#) $RCSfile: sysdep_int.h,v $ $Revision: 1.2 $ (Ideal World, Inc.) $Date: 2010/07/17 01:19:49 $
- */
-/*
  * Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
