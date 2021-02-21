@@ -1,0 +1,17 @@
+# Require clang-format-11
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Never
+AlwaysBreakAfterReturnType: AllDefinitions
+BraceWrapping:
+  AfterControlStatement: Never
+IncludeBlocks: Merge
+IndentPPDirectives: AfterHash  # Also indent #include
+SpacesBeforeTrailingComments: 4
+AlignConsecutiveAssignments: true
+AlignConsecutiveBitFields: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: Left
+AllowShortFunctionsOnASingleLine: None
+IndentGotoLabels: false
