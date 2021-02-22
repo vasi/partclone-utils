@@ -47,6 +47,10 @@ main(int argc, char *argv[]) {
         int   dontcare  = 0;
         int   anomalies = 0;
 
+        if (i > 1) {
+            fprintf(stdout, "\n");
+        }
+
         if ((error = partclone_open(argv[i], (char *)NULL, SYSDEP_OPEN_RO,
                                     &posix_dispatch, &pctx)) == 0) {
             uint64_t bmscanned = 0, unset = 0, set = 0, strange = 0;
