@@ -524,8 +524,8 @@ v2_verify(pc_context_t *pcp) {
             if (pcp->pc_head.totalblock % 8)
                 bitmap_size++;
 
-            pcp->pc_head.head_size = sizeof(pcp->pc_head_v2) + bitmap_size +
-                                     pcp->pc_head.checksum_size;
+            pcp->pc_head.head_size =
+                sizeof(pcp->pc_head_v2) + bitmap_size + CRC_SIZE;
 
             pcp->pc_flags |= PC_HEAD_VALID;
             /*
