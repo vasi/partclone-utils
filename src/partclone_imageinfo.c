@@ -37,6 +37,30 @@ typedef struct version_1_context {
     uint16_t       v1_bitmap_factor;            /* log2(entries)/index */
 } v1_context_t;
 
+off_t
+get_written_block_count(pc_context_t *pctx, off_t const data_size,
+                        off_t *const extra_size) {
+    off_t const bpc        = pctx->pc_head.blocks_per_checksum;
+    off_t const crc_size   = pctx->pc_head.checksum_size;
+    off_t const block_size = partclone_blocksize(pctx);
+
+    if (bpc <= 1) {
+        off_t const strip_size = block_size + crc_size;
+
+        *extra_size = data_size % strip_size;
+
+        return data_size / strip_size;
+    }
+
+    off_t const strip_size          = bpc * block_size + crc_size;
+    off_t const strip_count         = data_size / strip_size;
+    off_t const trailing_strip_size = data_size % strip_size;
+
+    *extra_size = (trailing_strip_size - crc_size) % block_size;
+
+    return strip_count * bpc + (trailing_strip_size - crc_size) / block_size;
+}
+
 int
 main(int argc, char *argv[]) {
     int i;
@@ -91,28 +115,37 @@ main(int argc, char *argv[]) {
                         strange);
                 if ((iob =
                          (unsigned char *)malloc(partclone_blocksize(pctx)))) {
-                    int *       fd = (int *)p->pc_fd;
+                    int *       fd       = (int *)p->pc_fd;
+                    int const   crc_size = p->pc_head.checksum_size;
                     off_t       sblkpos;
-                    off_t       fsize;
+                    off_t       data_size;
+                    off_t       extra_size;
                     struct stat sbuf;
                     error   = partclone_seek(pctx, 0);
                     error   = partclone_readblocks(pctx, iob, 1);
                     sblkpos = lseek(*fd, 0, SEEK_CUR);
-                    sblkpos -= (partclone_blocksize(pctx) + CRC_SIZE);
+                    sblkpos -= partclone_blocksize(pctx);
+                    if (p->pc_head.blocks_per_checksum == 1)
+                        sblkpos -= crc_size;
                     fstat(*fd, &sbuf);
-                    fsize = sbuf.st_size;
                     fprintf(stdout,
                             "%s: size is %lld bytes, blocks (%lld bytes) start "
-                            "at %lld: ",
-                            argv[i], (long long)fsize,
+                            "at %lld",
+                            argv[i], (long long)sbuf.st_size,
                             (long long)partclone_blocksize(pctx),
                             (long long)sblkpos);
-                    fsize -= sblkpos;
-                    fprintf(stdout, " %ld blocks written",
-                            fsize / (partclone_blocksize(pctx) + CRC_SIZE));
-                    if (fsize % (partclone_blocksize(pctx) + CRC_SIZE)) {
-                        fprintf(stdout, ": %ld byte trailer\n",
-                                fsize % (partclone_blocksize(pctx) + CRC_SIZE));
+                    data_size = sbuf.st_size - sblkpos;
+                    fprintf(
+                        stdout, ", %ld blocks written",
+                        get_written_block_count(pctx, data_size, &extra_size));
+                    if (extra_size) {
+                        fprintf(stdout, ", %ld byte trailer\n", extra_size);
+                        // Possible reasons:
+                        // - could be extra data if the written block count
+                        //   match with the value present in the header,
+                        //   otherwise if the count is smaller the image file
+                        //   may have been trunked.
+                        //   This may be a sign that the image is corrupted.
                     } else {
                         fprintf(stdout, "\n");
                     }
@@ -124,14 +157,14 @@ main(int argc, char *argv[]) {
                             eofpos = lseek(*fd, 0, SEEK_END);
                             if (cpos == eofpos) {
                                 fprintf(stdout,
-                                        "%s: read last block at end of file\n",
+                                        "%s: read last block at end of file - "
+                                        "success\n",
                                         argv[i]);
                             } else {
                                 fprintf(stderr,
                                         "%s: position after last block = %ld, "
-                                        "eof position = %ld, blocksize = %ld\n",
-                                        argv[i], cpos, eofpos,
-                                        partclone_blocksize(pctx) + CRC_SIZE);
+                                        "eof position = %ld\n",
+                                        argv[i], cpos, eofpos);
                                 anomalies++;
                             }
                         } else {

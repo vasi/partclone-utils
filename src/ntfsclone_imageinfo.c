@@ -159,9 +159,8 @@ main(int argc, char *argv[]) {
                                 fprintf(
                                     stderr,
                                     "%s: position after last block = %ld, eof "
-                                    "position = %ld, blocksize = %" PRIu64 "\n",
-                                    argv[i], cpos, eofpos,
-                                    ntfsclone_blocksize(ntctx));
+                                    "position = %ld\n",
+                                    argv[i], cpos, eofpos);
                                 anomalies++;
                             }
                         } else {
