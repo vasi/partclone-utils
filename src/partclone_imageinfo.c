@@ -125,8 +125,6 @@ main(int argc, char *argv[]) {
                     error   = partclone_readblocks(pctx, iob, 1);
                     sblkpos = lseek(*fd, 0, SEEK_CUR);
                     sblkpos -= partclone_blocksize(pctx);
-                    if (p->pc_head.blocks_per_checksum == 1)
-                        sblkpos -= crc_size;
                     fstat(*fd, &sbuf);
                     fprintf(stdout,
                             "%s: size is %lld bytes, blocks (%lld bytes) start "
@@ -155,7 +153,7 @@ main(int argc, char *argv[]) {
 
                             cpos   = lseek(*fd, 0, SEEK_CUR);
                             eofpos = lseek(*fd, 0, SEEK_END);
-                            if (cpos == eofpos) {
+                            if (cpos == (eofpos - crc_size)) {
                                 fprintf(stdout,
                                         "%s: read last block at end of file - "
                                         "success\n",
