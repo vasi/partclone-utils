@@ -14,6 +14,7 @@
 #    include "config.h"
 #endif /* HAVE_CONFIG_H */
 #include "changefile.h"
+#include "libchecksum.h"
 #include "libimage.h"
 #include "libpartclone.h"
 #include "partclone.h"
@@ -253,8 +254,7 @@ v1_verify(pc_context_t *pcp) {
              * Allocate and fill the bitmap.
              */
             if ((error = (*pcp->pc_sysdep->sys_malloc)(
-                     &v1p->v1_bitmap,
-                     sizeof(unsigned char) * pcp->pc_head.totalblock)) == 0) {
+                     &v1p->v1_bitmap, pcp->pc_head.totalblock)) == 0) {
                 uint64_t r_size;
 
                 (void)(*pcp->pc_sysdep->sys_seek)(
@@ -356,6 +356,9 @@ rblock2offset(pc_context_t *pcp, uint64_t rbnum) {
  * This routine is so wrong.  This isn't actually a CRC over the buffer,
  * it's a CRC of the first byte, iterated "size" number of times.  This is
  * to mimic the behavior of partclone (ech).
+ *
+ * Remark: it is defined here instead of checksum.c because it is absolutly
+ * specific to partclone.
  */
 static inline uint32_t
 v1_crc32(v1_context_t *v1p, uint32_t crc, char *buf, size_t size) {
@@ -532,8 +535,7 @@ v2_verify(pc_context_t *pcp) {
              * Allocate and fill the bitmap.
              */
             if ((error = (*pcp->pc_sysdep->sys_malloc)(
-                     &v1p->v1_bitmap,
-                     sizeof(unsigned char) * pcp->pc_head.totalblock)) == 0) {
+                     &v1p->v1_bitmap, pcp->pc_head.totalblock)) == 0) {
                 uint64_t r_size;
 
                 (void)(*pcp->pc_sysdep->sys_seek)(
@@ -541,23 +543,31 @@ v2_verify(pc_context_t *pcp) {
                     (uint64_t *)NULL);
 
                 if ((error = (*pcp->pc_sysdep->sys_malloc)(
-                         &bitmap, sizeof(unsigned char) * bitmap_size)) == 0) {
+                         &bitmap, bitmap_size + CRC_SIZE)) == 0) {
 
                     if (((error = (*pcp->pc_sysdep->sys_read)(
-                              pcp->pc_fd, bitmap, bitmap_size, &r_size)) ==
-                         0) &&
-                        (r_size == bitmap_size)) {
+                              pcp->pc_fd, bitmap, bitmap_size + CRC_SIZE,
+                              &r_size)) == 0) &&
+                        (r_size == bitmap_size + CRC_SIZE)) {
 
-                        for (i = 0; i < pcp->pc_head.totalblock; i++)
-                            v1p->v1_bitmap[i] =
-                                (bitmap[i >> 3] & (1 << (i & 7))) ? 1 : 0;
-
-                        (void)(*pcp->pc_sysdep->sys_free)(bitmap);
-
-                        error = precalculate_sumcount(pcp);
-                    } else {
-                        if (error == 0)
+                        crc32_t crc32 = init_crc32();
+                        crc32 = update_crc32(crc32, bitmap, bitmap_size);
+                        if (crc32 != *((crc32_t *)(bitmap + bitmap_size))) {
                             error = EINVAL;
+                        } else {
+                            /*
+                             * Convert the "bit" map into a "byte" map
+                             */
+                            for (i = 0; i < pcp->pc_head.totalblock; i++)
+                                v1p->v1_bitmap[i] =
+                                    (bitmap[i >> 3] & (1 << (i & 7))) ? 1 : 0;
+
+                            (void)(*pcp->pc_sysdep->sys_free)(bitmap);
+
+                            error = precalculate_sumcount(pcp);
+                        }
+                    } else if (error == 0) {
+                        error = EINVAL;
                     }
                 }
             }

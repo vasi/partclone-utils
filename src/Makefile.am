@@ -11,19 +11,20 @@
 sbin_PROGRAMS = imagemount partclone_imageinfo ntfsclone_imageinfo
 noinst_PROGRAMS = libpctest libntfstest cfdump cfchanges
 
-noinst_HEADERS = sysdep_int.h sysdep_posix.h partclone.h libpartclone.h libntfsclone.h libimage.h changefile.h changefileint.h ntfsclone.h librawimage.h
-noinst_LIBRARIES = librawimage.a libntfsclone.a libpartclone.a libimage.a libchangefile.a libsysdep_posix.a
+noinst_HEADERS = sysdep_int.h sysdep_posix.h partclone.h libchecksum.h libpartclone.h libntfsclone.h libimage.h changefile.h changefileint.h ntfsclone.h librawimage.h
+noinst_LIBRARIES = libchecksum.a librawimage.a libntfsclone.a libpartclone.a libimage.a libchangefile.a libsysdep_posix.a
+libchecksum_a_SOURCES = libchecksum.c
 librawimage_a_SOURCES = librawimage.c
 libntfsclone_a_SOURCES = libntfsclone.c
-libpartclone_a_SOURCES = libpartclone.c
+libpartclone_a_SOURCES = libpartclone.c libchecksum.c
 libimage_a_SOURCES = libimage.c
 libchangefile_a_SOURCES = changefile.c
 libsysdep_posix_a_SOURCES = sysdep_posix.c
 
 imagemount_SOURCES = imagemount.c
-imagemount_LDADD = libimage.a libpartclone.a libntfsclone.a librawimage.a libchangefile.a libsysdep_posix.a 
+imagemount_LDADD = libimage.a libpartclone.a libntfsclone.a librawimage.a libchangefile.a libsysdep_posix.a
 libpctest_SOURCES = libpctest.c
-libpctest_LDADD = libpartclone.a libchangefile.a libsysdep_posix.a
+libpctest_LDADD = libchecksum.a libpartclone.a libchangefile.a libsysdep_posix.a
 libntfstest_SOURCES = libntfstest.c
 libntfstest_LDADD = libntfsclone.a libchangefile.a libsysdep_posix.a
 partclone_imageinfo_SOURCES = partclone_imageinfo.c
