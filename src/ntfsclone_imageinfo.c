@@ -188,6 +188,7 @@ main(int argc, char *argv[]) {
                         argv[i], error, strerror(error));
                 anomalies++;
             }
+            ntfsclone_close(ntctx);
         } else {
             fprintf(stderr, "%s: cannot open image (error(%d) = %s)\n", argv[i],
                     error, strerror(error));

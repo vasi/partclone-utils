@@ -190,6 +190,7 @@ main(int argc, char *argv[]) {
                         argv[i], error, strerror(error));
                 anomalies++;
             }
+            partclone_close(pctx);
         } else {
             fprintf(stderr, "%s: cannot open image (error(%d) = %s)\n", argv[i],
                     error, strerror(error));
