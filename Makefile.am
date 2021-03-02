@@ -1,5 +1,5 @@
 #
-# Makefile.am	- automake input for top level directory.
+# Makefile.am - automake input for top level directory.
 #
 # Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
 #

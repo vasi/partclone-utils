@@ -1,5 +1,5 @@
 /*
- * libntfstest.c	- Test libntfsclone
+ * libntfstest.c - Test libntfsclone
  */
 /*
  * Copyright (c) 2013, Ideal World, Inc.  All Rights Reserved.

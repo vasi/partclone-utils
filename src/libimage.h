@@ -1,5 +1,5 @@
 /*
- * libimage.h	- Interfaces to image library.
+ * libimage.h - Interfaces to image library.
  */
 /*
  * Copyright (c) 2011, Ideal World, Inc.  All Rights Reserved.
@@ -13,6 +13,7 @@
 
 #ifndef _LIBIMAGE_H_
 #define _LIBIMAGE_H_ 1
+
 #include "sysdep_int.h"
 #include <sys/types.h>
 

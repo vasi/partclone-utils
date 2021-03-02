@@ -1,5 +1,5 @@
 /*
- * libpartclone.h	- Interfaces to partclone library.
+ * libpartclone.h - Interfaces to partclone library.
  */
 /*
  * Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
@@ -13,6 +13,7 @@
 
 #ifndef _LIBPARTCLONE_H_
 #define _LIBPARTCLONE_H_ 1
+
 #include "partclone.h"
 #include "sysdep_int.h"
 #include <sys/types.h>

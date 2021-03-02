@@ -1,5 +1,5 @@
 /*
- * changefile.h	- Interface to the changefile library.
+ * changefile.h - Interface to the changefile library.
  */
 /*
  * Copyright (c) 2011, Ideal World, Inc.  All Rights Reserved.

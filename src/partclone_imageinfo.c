@@ -1,5 +1,5 @@
 /*
- * partclone_imageinfo	- A cursory check that a file looks OK.
+ * partclone_imageinfo.c - A cursory check that a file looks OK.
  */
 /*
  * Copyright (c) 2013, Ideal World, Inc.  All Rights Reserved.
@@ -30,12 +30,11 @@
 #define CRC_SIZE      4
 
 typedef struct version_1_context {
-    unsigned char *v1_bitmap;   /* Usage bitmap */
-    uint64_t *     v1_sumcount; /* Precalculated indices */
-    uint64_t       v1_nvbcount; /* Preceding valid blocks */
-    unsigned long  v1_crc_tab32[CRC_TABLE_LEN];
-    /* Precalculated CRC table */
-    uint16_t v1_bitmap_factor; /* log2(entries)/index */
+    unsigned char *v1_bitmap;                   /* Usage bitmap */
+    uint64_t *     v1_sumcount;                 /* Precalculated indices */
+    uint64_t       v1_nvbcount;                 /* Preceding valid blocks */
+    unsigned long  v1_crc_tab32[CRC_TABLE_LEN]; /* Precalculated CRC table */
+    uint16_t       v1_bitmap_factor;            /* log2(entries)/index */
 } v1_context_t;
 
 int

@@ -1,5 +1,5 @@
 /*
- * libimage.c	- Image library.
+ * libimage.c - Image library.
  */
 /*
  * Copyright (c) 2011, Ideal World, Inc.  All Rights Reserved.

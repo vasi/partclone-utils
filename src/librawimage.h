@@ -1,5 +1,5 @@
 /*
- * librawimage.h	- Interfaces to raw image library.
+ * librawimage.h - Interfaces to raw image library.
  */
 /*
  * Copyright (c) 2014, Ideal World, Inc.  All Rights Reserved.
@@ -13,8 +13,10 @@
 
 #ifndef _LIBRAWIMAGE_H_
 #define _LIBRAWIMAGE_H_ 1
+
 #include "sysdep_int.h"
 #include <sys/types.h>
+
 int      rawimage_open(const char *path, const char *cfpath,
                        sysdep_open_mode_t omode, const sysdep_dispatch_t *sysdep,
                        void **rpp);

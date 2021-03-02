@@ -1,5 +1,5 @@
 /*
- * sysdep_posix.c	- System-dependent interface for POSIX user-mode.
+ * sysdep_posix.c - System-dependent interface for POSIX user-mode.
  */
 /*
  * Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
@@ -21,23 +21,23 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-/*
- * posix_open	- Open a file handle and return a pointer to it.
- *
- * Parameters:
- *	rhp	- Pointer to where to store pointer.
- *	p	- Path to open.
- *	flags	- file control flags (see open(2))
- *	mode	- file mode (see open(2))
- *
- * Returns:
- * 	0	- Success
- *	error	- Otherwise (ENOMEM, see errno values of open(2)).
- */
 static const int omode2flags[] = {0, O_RDONLY | O_LARGEFILE,
                                   O_RDWR | O_LARGEFILE, O_WRONLY | O_LARGEFILE,
                                   O_RDWR | O_CREAT | O_LARGEFILE};
 
+/*
+ * Open a file handle and return a pointer to it.
+ *
+ * Parameters:
+ * rhp   - Pointer to where to store pointer.
+ * p     - Path to open.
+ * flags - file control flags (see open(2))
+ * mode  - file mode (see open(2))
+ *
+ * Returns:
+ * - 0: Success.
+ * - error: Otherwise (ENOMEM, see errno values of open(2)).
+ */
 static int
 posix_open(void *rhp, const char *p, sysdep_open_mode_t omode) {
     int **fhpp = (int **)rhp;
@@ -60,15 +60,15 @@ posix_open(void *rhp, const char *p, sysdep_open_mode_t omode) {
 }
 
 /*
- * posix_closex	- Close a file handle and free pointer.
+ * Close a file handle and free pointer.
  *
  * Parameters:
- *	rh	- File handle
+ * rh - File handle
  *
  * Returns:
- *	0	- Success.
- *	EINVAL	- Invalid file handle.
- *	error	- Otherwise.
+ * - 0: Success.
+ * - EINVAL: Invalid file handle.
+ * - error: Otherwise.
  */
 static int
 posix_closex(void *rh) {
@@ -82,18 +82,18 @@ posix_closex(void *rh) {
 }
 
 /*
- * posix_seek	- Seek to an offset in a file.
+ * Seek to an offset in a file.
  *
  * Parameters:
- *	rh	- File handle.
- *	offset	- Offset to seek to.
- *	whence	- One of SYSDEP_SEEK_ABSOLUTE, SYSDEP_SEEK_RELATIVE or
- * 		  SYSDEP_SEEK_END.
- *	resoffp	- Pointer to resultant location (can be null).
+ * rh      - File handle.
+ * offset  - Offset to seek to.
+ * whence  - One of SYSDEP_SEEK_ABSOLUTE, SYSDEP_SEEK_RELATIVE or
+ * SYSDEP_SEEK_END.
+ * resoffp - Pointer to resultant location (can be null).
  *
  * Returns:
- *	0	- Success.
- *	EINVAL	- Invalid file handle.
+ * - 0: Success.
+ * - EINVAL: Invalid file handle.
  */
 static int
 posix_seek(void *rh, int64_t offset, sysdep_whence_t whence,
@@ -110,18 +110,18 @@ posix_seek(void *rh, int64_t offset, sysdep_whence_t whence,
 }
 
 /*
- * posix_read	- Read data from the current offset.
+ * Read data from the current offset.
  *
  * Parameters:
- *	rh	- File handle.
- *	buf	- Buffer to read into.
- *	len	- Length to read.
- *	nr	- How many bytes read (written on success).
+ * rh  - File handle.
+ * buf - Buffer to read into.
+ * len - Length to read.
+ * nr  - How many bytes read (written on success).
  *
  * Returns:
- *	0	- Success.
- *	EINVAL	- Invalid file handle.
- *	error	- Otherwise.
+ * - 0: Success.
+ * - EINVAL: Invalid file handle.
+ * - error: Otherwise.
  */
 static int
 posix_read(void *rh, void *buf, uint64_t len, uint64_t *nr) {
@@ -135,18 +135,18 @@ posix_read(void *rh, void *buf, uint64_t len, uint64_t *nr) {
 }
 
 /*
- * posix_write	- Write data at the current offset.
+ * Write data at the current offset.
  *
  * Parameters:
- *	rh	- File handle.
- *	buf	- Buffer to read into.
- *	len	- Length to read.
- *	nw	- How many bytes written (written on success).
+ * rh  - File handle.
+ * buf - Buffer to read into.
+ * len - Length to read.
+ * nw  - How many bytes written (written on success).
  *
  * Returns:
- *	0	- Success.
- *	EINVAL	- Invalid file handle.
- *	error	- Otherwise.
+ * - 0: Success.
+ * - EINVAL: Invalid file handle.
+ * - error: Otherwise.
  */
 static int
 posix_write(void *rh, void *buf, uint64_t len, uint64_t *nw) {
@@ -160,16 +160,16 @@ posix_write(void *rh, void *buf, uint64_t len, uint64_t *nw) {
 }
 
 /*
- * posix_malloc	- Allocate dynamic memory.
+ * Allocate dynamic memory.
  *
  * Parameters:
- *	nmpp	- Pointer to new memory pointer (written always).
- *	nbytes	- Size of memory to allocate.
+ * nmpp   - Pointer to new memory pointer (written always).
+ * nbytes - Size of memory to allocate.
  *
  * Returns:
- *	0	- Success
- *	EINVAL	- Invalid nmpp
- *	ENOMEM	- No memory available
+ * - 0: Success.
+ * - EINVAL: Invalid nmpp.
+ * - ENOMEM: No memory available.
  */
 static int
 posix_malloc(void *nmpp, uint64_t nbytes) {
@@ -178,14 +178,14 @@ posix_malloc(void *nmpp, uint64_t nbytes) {
 }
 
 /*
- * posix_free	- Free dynamic memory.
+ * Free dynamic memory.
  *
  * Parameters:
- *	mp	- Pointer to memory.
+ * mp - Pointer to memory.
  *
  * Returns:
- *	0	- Success
- *	EINVAL	- Invalid pointer
+ * - 0: Success.
+ * - EINVAL: Invalid pointer.
  */
 static int
 posix_free(void *mp) {
@@ -198,11 +198,11 @@ posix_free(void *mp) {
 }
 
 /*
- * sys_file_size	- Determine a file's size.
+ * Determine a file's size.
  *
  * Paramters:
- *  rh	- Open file handle.
- *  nbytes	- File size.
+ *  rh     - Open file handle.
+ *  nbytes - File size.
  */
 static int
 posix_file_size(void *rh, uint64_t *nbytes) {

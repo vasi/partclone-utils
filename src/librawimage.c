@@ -1,5 +1,5 @@
 /*
- * librawimage.c	- Access individual blocks in a raw image.
+ * librawimage.c - Access individual blocks in a raw image.
  */
 /*
  * Copyright (c) 2014, Ideal World, Inc.  All Rights Reserved.
@@ -21,10 +21,8 @@
 
 static const char cf_trailer[] = ".cf";
 
-/*
- * raw_context_t	- Handle to access rawimage images.  Used internally.
- */
 struct change_file_context;
+
 #define RAW_OPEN         0x0001  /* Image is open. */
 #define RAW_CF_OPEN      0x0002  /* Change file is open */
 #define RAW_VERIFIED     0x0004  /* Image verified */
@@ -36,6 +34,10 @@ struct change_file_context;
 #define RAW_VALID        0x8000  /* Header is valid */
 #define RAW_TOLERANT     0x40000 /* Open in tolerant mode */
 #define RAW_READ_ONLY    0x80000 /* Open read only */
+
+/*
+ * Handle to access rawimage images.  Used internally.
+ */
 typedef struct libraw_context {
     void *                   raw_fd;          /* File handle */
     char *                   raw_path;        /* Path to image */
@@ -77,8 +79,7 @@ typedef struct libraw_context {
 #define RAW_BLOCKSIZE 512
 
 /*
- * rblock2offset	- Calculate offset in image file of particular
- *			  block.
+ * Calculate offset in image file of particular block.
  */
 static inline int64_t
 rblock2offset(raw_context_t *rcp, uint64_t rbnum) {
@@ -86,7 +87,7 @@ rblock2offset(raw_context_t *rcp, uint64_t rbnum) {
 }
 
 /*
- * rawimage_close()	- Close the image handle.
+ * Close the image handle.
  */
 int
 rawimage_close(void *rp) {
@@ -114,8 +115,7 @@ rawimage_close(void *rp) {
 }
 
 /*
- * rawimage_open	- Open an image handle using the system-specific
- *			  interfaces.
+ * Open an image handle using the system-specific interfaces.
  */
 int
 rawimage_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
@@ -169,7 +169,7 @@ rawimage_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
 }
 
 /*
- * rawimage_tolerant_mode	- Set tolerant mode (does nothing)
+ * Set tolerant mode (does nothing)
  */
 void
 rawimage_tolerant_mode(void *rp) {
@@ -181,7 +181,7 @@ rawimage_tolerant_mode(void *rp) {
 }
 
 /*
- * rawimage_verify	- Verify the image.
+ * Verify the image.
  */
 int
 rawimage_verify(void *rp) {
@@ -216,7 +216,7 @@ rawimage_verify(void *rp) {
 }
 
 /*
- * rawimage_blocksize	- Return the blocksize.
+ * Return the blocksize.
  */
 int64_t
 rawimage_blocksize(void *rp) {
@@ -225,7 +225,7 @@ rawimage_blocksize(void *rp) {
 }
 
 /*
- * rawimage_blockcount	- Return the total count of blocks.
+ * Return the total count of blocks.
  */
 int64_t
 rawimage_blockcount(void *rp) {
@@ -234,7 +234,7 @@ rawimage_blockcount(void *rp) {
 }
 
 /*
- * rawimage_seek	- Seek to a particular block.
+ * Seek to a particular block.
  */
 int
 rawimage_seek(void *rp, uint64_t blockno) {
@@ -249,7 +249,7 @@ rawimage_seek(void *rp, uint64_t blockno) {
 }
 
 /*
- * rawimage_tell	- Obtain the current position.
+ * Obtain the current position.
  */
 uint64_t
 rawimage_tell(void *rp) {
@@ -259,7 +259,7 @@ rawimage_tell(void *rp) {
 }
 
 /*
- * rawimage_readblocks	- Read blocks from the current position.
+ * Read blocks from the current position.
  */
 int
 rawimage_readblocks(void *rp, void *buffer, uint64_t nblocks) {
@@ -301,7 +301,7 @@ rawimage_readblocks(void *rp, void *buffer, uint64_t nblocks) {
 }
 
 /*
- * rawimage_block_used	- Determine if the current block is used.
+ * Determine if the current block is used.
  */
 int
 rawimage_block_used(void *rp) {
@@ -313,7 +313,7 @@ rawimage_block_used(void *rp) {
 }
 
 /*
- * rawimage_writeblocks	- Write blocks to the current position.
+ * Write blocks to the current position.
  */
 int
 rawimage_writeblocks(void *rp, void *buffer, uint64_t nblocks) {
@@ -367,7 +367,7 @@ rawimage_writeblocks(void *rp, void *buffer, uint64_t nblocks) {
 }
 
 /*
- * rawimage_sync	- Commit changes to image.
+ * Commit changes to image.
  */
 int
 rawimage_sync(void *rp) {
@@ -377,7 +377,7 @@ rawimage_sync(void *rp) {
 }
 
 /*
- * rawimage_probe	- Is this a rawimage image?
+ * Is this a rawimage image?
  */
 int
 rawimage_probe(const char *path, const sysdep_dispatch_t *sysdep) {

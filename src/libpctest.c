@@ -1,5 +1,5 @@
 /*
- * libpctest.c	- Test libpartclone
+ * libpctest.c - Test libpartclone
  */
 /*
  * Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.

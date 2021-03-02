@@ -1,5 +1,5 @@
 /*
- * changefileint.h	- Internals to the changefile library.
+ * changefileint.h - Internals to the changefile library.
  */
 /*
  * Copyright (c) 2014, Ideal World, Inc.  All Rights Reserved.
@@ -52,4 +52,5 @@ typedef struct change_file_block_trailer {
     uint32_t cfb_crc;
     uint32_t cfb_magic;
 } cf_block_trailer_t;
+
 #endif /* _CHANGEFILEINT_H_ */

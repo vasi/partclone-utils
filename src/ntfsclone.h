@@ -71,6 +71,8 @@ typedef struct ntfsclone_atom {
         unsigned char ncau_used_cluster[sizeof(uint64_t)];
     } nca_union;
 } __attribute__((__packed__)) ntfsclone_atom_t;
+
 #define ATOM_TO_DATA_OFFSET \
     ((uint64_t) & (((ntfsclone_atom_t *)NULL)->nca_union.ncau_used_cluster[0]))
+
 #endif /* _NTFSCLONE_H_ */

@@ -1,5 +1,5 @@
 /*
- * libntfsclone.h	- Interfaces to ntfsclone library.
+ * libntfsclone.h - Interfaces to ntfsclone library.
  */
 /*
  * Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
@@ -13,6 +13,7 @@
 
 #ifndef _LIBNTFSCLONE_H_
 #define _LIBNTFSCLONE_H_ 1
+
 #include "sysdep_int.h"
 #include <sys/types.h>
 

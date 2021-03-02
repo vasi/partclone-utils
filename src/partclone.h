@@ -11,7 +11,8 @@
  * (at your option) any later version.
  */
 #ifndef _PARTCLONE_H_
-#define _PARTCLONE_H_    1
+#define _PARTCLONE_H_ 1
+
 #define IMAGE_MAGIC      "partclone-image"
 #define IMAGE_MAGIC_SIZE 15
 
@@ -71,4 +72,5 @@ struct image_head_v2 {
     unsigned int       crc;
 } __attribute__((packed));
 typedef struct image_head_v2 image_head_v2;
+
 #endif /* _PARTCLONE_H_ */

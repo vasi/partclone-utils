@@ -1,5 +1,5 @@
 #
-# Makefile.am	- automake file for docs.
+# Makefile.am - automake file for docs.
 #
 # Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
 #

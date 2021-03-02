@@ -1,5 +1,5 @@
 .\"
-.\" imagemount.8.in	- Source for man page
+.\" imagemount.8.in - Source for man page
 .\"
 .\" Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
 .\"
@@ -12,7 +12,7 @@
 .SH NAME
 imagemount \- Utility to mount an image created by partclone or ntfsclone.
 .SH SYNOPSIS
-imagemount -d nbd-dev -f image-file [-c change-file] 
+imagemount -d nbd-dev -f image-file [-c change-file]
 [-m mount-point [-t mount-type]] [-v verbose] [-DrwTR]
 .SH DESCRIPTION
 .B imagemount
@@ -22,7 +22,7 @@ and optionally mounts the image on the file system.
 .SH OPTIONS
 .TP
 .B -d DEVICE
-Use specified 
+Use specified
 .B nbd
 device as block device.
 .TP
@@ -61,18 +61,18 @@ Enable 'tolerant' mode.  Try to make the best of what data is present.
 Enable raw image mode.  Allow file to be treated as a raw imagetop
 .
 .SH Examples
-Mount image 
+Mount image
 .B /dir/image
 using
 .B /dev/nbd0
-on 
+on
 .B /mountpoint
 with type
 .B fstype
 in read-write mode.  (Note that changes to the filesystem will be stored in
 /dir/image.cf)
 .nf
-.B "	imagemount -d /dev/nbd0 -f /dir/image -m /mountpoint -t fstype -w
+.B "imagemount -d /dev/nbd0 -f /dir/image -m /mountpoint -t fstype -w
 .fi
 
 Use image
@@ -81,7 +81,7 @@ as network block device
 .B /dev/nbd0
 in read-only mode.
 .nf
-.B "	imagemount -d /dev/nbd0 -f /dir/image -r
+.B "imagemount -d /dev/nbd0 -f /dir/image -r
 .fi
 .SH See Also
 .BR partclone(8)

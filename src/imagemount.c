@@ -1,5 +1,5 @@
 /*
- * imagemount.c	- Attach and optionally mount a filesystem block image.
+ * imagemount.c - Attach and optionally mount a filesystem block image.
  */
 /*
  * Copyright (c) 2010, Ideal World, Inc.  All Rights Reserved.
@@ -168,7 +168,7 @@ nbdev_open(nbd_context_t *ncp) {
 }
 
 /*
- * nbd_connect	- Connect the nbd device.
+ * Connect the nbd device.
  */
 static int
 nbd_connect(nbd_context_t *ncp, void *pctx) {
@@ -301,7 +301,9 @@ nbd_reapchild(int sig, siginfo_t *si, void *vp) {
 }
 
 /*
- * nbd_service_requests - the main work processing loop.  This is very
+ * Handle NBD resquest
+ *
+ * The main work processing loop.  This is very
  * serial and very unrobust.
  */
 static int
