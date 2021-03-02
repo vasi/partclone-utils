@@ -122,7 +122,7 @@ my_strrchr(const char *s, char c) {
         ;
     if (*xs == c)
         xs++;
-    return (xs);
+    return xs;
 }
 
 /*
@@ -164,7 +164,8 @@ nbdev_open(nbd_context_t *ncp) {
         if ((ncp->nbd_fh = open(ncp->nbd_dev, O_RDWR)) < 0)
             error = errno;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -253,7 +254,7 @@ nbd_connect(nbd_context_t *ncp, void *pctx) {
     if (error)
         logmsg(ncp, 1, "nbd_connect: fail with %d (%s)\n", error,
                strerror(error));
-    return (error);
+    return error;
 }
 
 /*
@@ -703,7 +704,7 @@ nbd_service_requests(nbd_context_t *ncp, void *pctx) {
      * Remove the pid file.
      */
     remove_pid_file(pidfile);
-    return (error);
+    return error;
 }
 
 /*
@@ -735,7 +736,7 @@ nbd_check_capabilities(nbd_context_t *ncp, void *pctx) {
         error = errno;
     }
 #endif /* HAVE_SYS_CAPABILITY_H */
-    return (error);
+    return error;
 }
 
 /*
@@ -757,7 +758,8 @@ nbd_daemon_mode(nbd_context_t *ncp, void *pctx) {
             logmsg(ncp, 0, "%s: Successfully daemonized.", ncp->svc_progname);
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -913,5 +915,6 @@ main(int argc, char *argv[]) {
                 "[-m mount [-t type]] [-i timeout] [-v verbose] [-Drw]\n",
                 argv[0], argv[0]);
     }
-    return (error);
+
+    return error;
 }

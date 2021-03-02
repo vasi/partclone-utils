@@ -55,7 +55,7 @@ cf_init(const char *cfpath, const sysdep_dispatch_t *sysdep, uint64_t blocksize,
     }
     if (!error && cfp)
         *cfpp = (void *)cfp;
-    return (error);
+    return error;
 }
 
 /*
@@ -116,7 +116,8 @@ cf_verify(void *vcp) {
             error = EIO;
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -176,7 +177,8 @@ cf_create(const char *cfpath, const sysdep_dispatch_t *sysdep,
             error = cf_verify(*cfpp);
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -210,7 +212,8 @@ cf_sync(void *vcp) {
          */
         cfp->cfc_header.cf_flags &= ~CF_HEADER_DIRTY;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -230,7 +233,7 @@ cf_finish(void *vcp) {
     if (cfp->cfc_blockmap)
         (void)(*cfp->cfc_sysdep->sys_free)(cfp->cfc_blockmap);
     (void)(*cfp->cfc_sysdep->sys_close)(cfp->cfc_fd);
-    return ((*cfp->cfc_sysdep->sys_free)(cfp));
+    return (*cfp->cfc_sysdep->sys_free)(cfp);
 }
 
 /*
@@ -244,7 +247,8 @@ cf_seek(void *vcp, uint64_t blockno) {
         cfp->cfc_curpos = blockno;
         error           = 0;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -259,7 +263,8 @@ cf_crc32(cf_context_t *cfp, uint32_t crc, unsigned char *buf, uint64_t size) {
         tmp = crc ^ (((uint32_t)buf[s]) & 0x000000ffL);
         crc = (crc >> 8) ^ cfp->cfc_crc_tab32[tmp & 0xff];
     }
-    return (crc);
+
+    return crc;
 }
 
 /*
@@ -313,7 +318,8 @@ cf_readblock(void *vcp, void *buffer) {
     } else {
         error = ENXIO;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -323,7 +329,7 @@ int
 cf_blockused(void *vcp) {
     cf_context_t *cfp = (cf_context_t *)vcp;
 
-    return ((cfp->cfc_blockmap[cfp->cfc_curpos]) ? 1 : 0);
+    return (cfp->cfc_blockmap[cfp->cfc_curpos]) ? 1 : 0;
 }
 
 /*
@@ -363,5 +369,6 @@ cf_writeblock(void *vcp, void *buffer) {
             }
         }
     }
-    return (error);
+
+    return error;
 }

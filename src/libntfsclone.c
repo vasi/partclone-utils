@@ -143,7 +143,7 @@ bitmap_bit_value(unsigned char *bitmap, uint64_t bit) {
     uint64_t      boffs = bit / 8;
     uint8_t       bdisp = bit & 7;
     unsigned char mask  = 1 << bdisp;
-    return ((bitmap[boffs] & mask) ? 1 : 0);
+    return (bitmap[boffs] & mask) ? 1 : 0;
 }
 
 /*
@@ -190,7 +190,8 @@ v10_init(nc_context_t *ntcp) {
             v10p->v10_bucket_factor = V10_DEFAULT_FACTOR;
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -325,7 +326,8 @@ v10_verify(nc_context_t *ntcp) {
             }
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -348,7 +350,8 @@ v10_finish(nc_context_t *ntcp) {
         ntcp->nc_flags &= ~NC_HAVE_VERDEP;
         error = (ntcp->nc_cf_handle) ? cf_finish(ntcp->nc_cf_handle) : 0;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -392,7 +395,8 @@ v10_seek(nc_context_t *ntcp, uint64_t blockno) {
         }
         error = (ntcp->nc_cf_handle) ? cf_seek(ntcp->nc_cf_handle, blockno) : 0;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -457,7 +461,8 @@ seek2cluster(nc_context_t *ntcp, uint64_t cnum) {
                 (uint64_t *)NULL);
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -505,7 +510,8 @@ v10_readblock(nc_context_t *ntcp, void *buffer) {
             }
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -521,7 +527,8 @@ v10_blockused(nc_context_t *ntcp) {
                      ? 1
                      : bitmap_bit_value(v10p->v10_bitmap, ntcp->nc_curblock);
     }
-    return (retval);
+
+    return retval;
 }
 
 /*
@@ -564,7 +571,8 @@ v10_writeblock(nc_context_t *ntcp, void *buffer) {
             error = cf_writeblock(ntcp->nc_cf_handle, buffer);
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -576,7 +584,8 @@ v10_sync(nc_context_t *ntcp) {
     if (NTCTX_WRITEREADY(ntcp)) {
         error = cf_sync(ntcp->nc_cf_handle);
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -622,7 +631,8 @@ ntfsclone_close(void *rp) {
         (void)(*ntcp->nc_sysdep->sys_free)(ntcp);
         error = 0;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -667,7 +677,8 @@ ntfsclone_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
     if (error) {
         *rpp = (void *)NULL;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -759,17 +770,18 @@ ntfsclone_verify_common(void *rp, int full) {
                 error = EIO;
         }
     }
-    return (error);
+
+    return error;
 }
 
 static int
 ntfsclone_verify_header_only(void *rp) {
-    return (ntfsclone_verify_common(rp, 0));
+    return ntfsclone_verify_common(rp, 0);
 }
 
 int
 ntfsclone_verify(void *rp) {
-    return (ntfsclone_verify_common(rp, 1));
+    return ntfsclone_verify_common(rp, 1);
 }
 
 /*
@@ -778,7 +790,7 @@ ntfsclone_verify(void *rp) {
 int64_t
 ntfsclone_blocksize(void *rp) {
     nc_context_t *ntcp = (nc_context_t *)rp;
-    return ((NTCTX_VERIFIED(ntcp)) ? ntcp->nc_head.cluster_size : -1);
+    return (NTCTX_VERIFIED(ntcp)) ? ntcp->nc_head.cluster_size : -1;
 }
 
 /*
@@ -787,7 +799,7 @@ ntfsclone_blocksize(void *rp) {
 int64_t
 ntfsclone_blockcount(void *rp) {
     nc_context_t *ntcp = (nc_context_t *)rp;
-    return ((NTCTX_VERIFIED(ntcp)) ? ntcp->nc_head.nr_clusters : -1);
+    return (NTCTX_VERIFIED(ntcp)) ? ntcp->nc_head.nr_clusters : -1;
 }
 
 /*
@@ -806,7 +818,8 @@ ntfsclone_seek(void *rp, uint64_t blockno) {
             ntcp->nc_curblock = blockno;
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -816,7 +829,7 @@ uint64_t
 ntfsclone_tell(void *rp) {
     nc_context_t *ntcp = (nc_context_t *)rp;
 
-    return ((NTCTX_READREADY(ntcp)) ? ntcp->nc_curblock : ~0);
+    return (NTCTX_READREADY(ntcp)) ? ntcp->nc_curblock : ~0;
 }
 
 /*
@@ -842,7 +855,8 @@ ntfsclone_readblocks(void *rp, void *buffer, uint64_t nblocks) {
             cbp += ntcp->nc_head.cluster_size;
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -851,9 +865,9 @@ ntfsclone_readblocks(void *rp, void *buffer, uint64_t nblocks) {
 int
 ntfsclone_block_used(void *rp) {
     nc_context_t *ntcp = (nc_context_t *)rp;
-    return ((NTCTX_READREADY(ntcp))
-                ? (*ntcp->nc_dispatch->version_blockused)(ntcp)
-                : BLOCK_ERROR);
+    return (NTCTX_READREADY(ntcp))
+               ? (*ntcp->nc_dispatch->version_blockused)(ntcp)
+               : BLOCK_ERROR;
 }
 
 /*
@@ -880,7 +894,8 @@ ntfsclone_writeblocks(void *rp, void *buffer, uint64_t nblocks) {
             cbp += ntcp->nc_head.cluster_size;
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -890,8 +905,8 @@ int
 ntfsclone_sync(void *rp) {
     nc_context_t *ntcp = (nc_context_t *)rp;
 
-    return ((NTCTX_WRITEREADY(ntcp)) ? (*ntcp->nc_dispatch->version_sync)(ntcp)
-                                     : EINVAL);
+    return (NTCTX_WRITEREADY(ntcp)) ? (*ntcp->nc_dispatch->version_sync)(ntcp)
+                                    : EINVAL;
 }
 
 /*
@@ -906,7 +921,8 @@ ntfsclone_probe(const char *path, const sysdep_dispatch_t *sysdep) {
         error = ntfsclone_verify_header_only(testh);
         ntfsclone_close(testh);
     }
-    return (error);
+
+    return error;
 }
 
 /*

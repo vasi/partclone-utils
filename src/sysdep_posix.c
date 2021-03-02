@@ -56,7 +56,8 @@ posix_open(void *rhp, const char *p, sysdep_open_mode_t omode) {
             error = 0;
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -78,7 +79,8 @@ posix_closex(void *rh) {
         error = close(*fhp);
         free(fhp);
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -103,9 +105,9 @@ posix_seek(void *rh, int64_t offset, sysdep_whence_t whence,
         off_t poffs = lseek(*fhp, offset, (int)whence);
         if (resoffp)
             *resoffp = (uint64_t)poffs;
-        return ((poffs >= 0) ? 0 : errno);
+        return (poffs >= 0) ? 0 : errno;
     } else {
-        return (EINVAL);
+        return EINVAL;
     }
 }
 
@@ -128,9 +130,9 @@ posix_read(void *rh, void *buf, uint64_t len, uint64_t *nr) {
     int *fhp = (int *)rh;
     if (fhp) {
         *nr = read(*fhp, buf, len);
-        return ((*nr == len) ? 0 : errno);
+        return (*nr == len) ? 0 : errno;
     } else {
-        return (EINVAL);
+        return EINVAL;
     }
 }
 
@@ -153,9 +155,9 @@ posix_write(void *rh, void *buf, uint64_t len, uint64_t *nw) {
     int *fhp = (int *)rh;
     if (fhp) {
         *nw = write(*fhp, buf, len);
-        return ((*nw == len) ? 0 : errno);
+        return (*nw == len) ? 0 : errno;
     } else {
-        return (EINVAL);
+        return EINVAL;
     }
 }
 
@@ -174,7 +176,7 @@ posix_write(void *rh, void *buf, uint64_t len, uint64_t *nw) {
 static int
 posix_malloc(void *nmpp, uint64_t nbytes) {
     void **xnmp = (void **)nmpp;
-    return ((xnmp) ? (((*xnmp = malloc(nbytes))) ? 0 : ENOMEM) : EINVAL);
+    return (xnmp) ? (((*xnmp = malloc(nbytes))) ? 0 : ENOMEM) : EINVAL;
 }
 
 /*
@@ -191,9 +193,9 @@ static int
 posix_free(void *mp) {
     if (mp) {
         free(mp);
-        return (0);
+        return 0;
     } else {
-        return (EINVAL);
+        return EINVAL;
     }
 }
 
@@ -222,7 +224,8 @@ posix_file_size(void *rh, uint64_t *nbytes) {
             }
         }
     }
-    return (error);
+
+    return error;
 }
 
 const sysdep_dispatch_t posix_dispatch = {

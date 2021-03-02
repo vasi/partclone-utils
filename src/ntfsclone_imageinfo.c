@@ -69,7 +69,7 @@ bitmap_bit_value(unsigned char *bitmap, uint64_t bit) {
     uint64_t      boffs = bit / 8;
     uint8_t       bdisp = bit & 7;
     unsigned char mask  = 1 << bdisp;
-    return ((bitmap[boffs] & mask) ? 1 : 0);
+    return (bitmap[boffs] & mask) ? 1 : 0;
 }
 
 int

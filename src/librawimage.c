@@ -83,7 +83,7 @@ typedef struct libraw_context {
  */
 static inline int64_t
 rblock2offset(raw_context_t *rcp, uint64_t rbnum) {
-    return (rbnum * rcp->raw_blocksize);
+    return rbnum * rcp->raw_blocksize;
 }
 
 /*
@@ -111,7 +111,8 @@ rawimage_close(void *rp) {
         (void)(*rcp->raw_sysdep->sys_free)(rcp);
         error = 0;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -165,7 +166,8 @@ rawimage_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
     if (error) {
         *rpp = (void *)NULL;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -212,7 +214,8 @@ rawimage_verify(void *rp) {
             rcp->raw_flags |= RAW_VERIFIED;
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -221,7 +224,7 @@ rawimage_verify(void *rp) {
 int64_t
 rawimage_blocksize(void *rp) {
     raw_context_t *rcp = (raw_context_t *)rp;
-    return ((RAWCTX_VERIFIED(rcp)) ? rcp->raw_blocksize : -1);
+    return (RAWCTX_VERIFIED(rcp)) ? rcp->raw_blocksize : -1;
 }
 
 /*
@@ -230,7 +233,7 @@ rawimage_blocksize(void *rp) {
 int64_t
 rawimage_blockcount(void *rp) {
     raw_context_t *rcp = (raw_context_t *)rp;
-    return ((RAWCTX_VERIFIED(rcp)) ? rcp->raw_totalblocks : -1);
+    return (RAWCTX_VERIFIED(rcp)) ? rcp->raw_totalblocks : -1;
 }
 
 /*
@@ -245,7 +248,8 @@ rawimage_seek(void *rp, uint64_t blockno) {
         rcp->raw_curblock = blockno;
         error = (rcp->raw_cf_handle) ? cf_seek(rcp->raw_cf_handle, blockno) : 0;
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -255,7 +259,7 @@ uint64_t
 rawimage_tell(void *rp) {
     raw_context_t *rcp = (raw_context_t *)rp;
 
-    return ((RAWCTX_READREADY(rcp)) ? rcp->raw_curblock : ~0);
+    return (RAWCTX_READREADY(rcp)) ? rcp->raw_curblock : ~0;
 }
 
 /*
@@ -297,7 +301,8 @@ rawimage_readblocks(void *rp, void *buffer, uint64_t nblocks) {
             }
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -306,10 +311,9 @@ rawimage_readblocks(void *rp, void *buffer, uint64_t nblocks) {
 int
 rawimage_block_used(void *rp) {
     raw_context_t *rcp = (raw_context_t *)rp;
-    return (
-        (RAWCTX_READREADY(rcp) && (rcp->raw_curblock < rcp->raw_totalblocks))
-            ? 1
-            : BLOCK_ERROR);
+    return (RAWCTX_READREADY(rcp) && (rcp->raw_curblock < rcp->raw_totalblocks))
+               ? 1
+               : BLOCK_ERROR;
 }
 
 /*
@@ -363,7 +367,8 @@ rawimage_writeblocks(void *rp, void *buffer, uint64_t nblocks) {
             }
         }
     }
-    return (error);
+
+    return error;
 }
 
 /*
@@ -373,7 +378,7 @@ int
 rawimage_sync(void *rp) {
     raw_context_t *rcp = (raw_context_t *)rp;
 
-    return ((RAWCTX_WRITEREADY(rcp)) ? cf_sync(rcp->raw_cf_handle) : EINVAL);
+    return (RAWCTX_WRITEREADY(rcp)) ? cf_sync(rcp->raw_cf_handle) : EINVAL;
 }
 
 /*
@@ -388,7 +393,8 @@ rawimage_probe(const char *path, const sysdep_dispatch_t *sysdep) {
         error = rawimage_verify(testh);
         rawimage_close(testh);
     }
-    return (error);
+
+    return error;
 }
 
 /*

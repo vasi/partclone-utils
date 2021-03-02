@@ -44,7 +44,8 @@ xcrc32(uint32_t crc, unsigned char *buf, uint64_t size) {
         tmp = crc ^ (((uint32_t)buf[s]) & 0x000000ffL);
         crc = (crc >> 8) ^ xcrc_tab32[tmp & 0xff];
     }
-    return (crc);
+
+    return crc;
 }
 
 int
@@ -70,7 +71,8 @@ verify_block(void *cf, uint64_t offs, uint64_t index, void *rbuffer,
             }
         }
     }
-    return (error);
+
+    return error;
 }
 
 void
@@ -216,5 +218,6 @@ main(int argc, char *argv[]) {
         fprintf(stderr, "%s: usage %s image-file change-file\n", argv[0],
                 argv[0]);
     }
-    return (error);
+
+    return error;
 }

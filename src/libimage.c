@@ -61,7 +61,8 @@ image_open(const char *path, const char *cfpath, sysdep_open_mode_t omode,
                                              &ihp->i_type_handle);
         }
     }
-    return (error);
+
+    return error;
 }
 
 int
@@ -75,7 +76,8 @@ image_close(void *rp) {
     } else {
         error = ESTALE;
     }
-    return (error);
+
+    return error;
 }
 
 void
@@ -93,23 +95,24 @@ image_verify(void *rp) {
     if (ihp && (ihp->i_magic == IMAGE_MAGIC)) {
         error = (*ihp->i_dispatch->verify)(ihp->i_type_handle);
     }
-    return (error);
+
+    return error;
 }
 
 int64_t
 image_blocksize(void *rp) {
     image_handle_t *ihp = (image_handle_t *)rp;
-    return ((ihp && (ihp->i_magic == IMAGE_MAGIC))
-                ? (*ihp->i_dispatch->blocksize)(ihp->i_type_handle)
-                : -1);
+    return (ihp && (ihp->i_magic == IMAGE_MAGIC))
+               ? (*ihp->i_dispatch->blocksize)(ihp->i_type_handle)
+               : -1;
 }
 
 int64_t
 image_blockcount(void *rp) {
     image_handle_t *ihp = (image_handle_t *)rp;
-    return ((ihp && (ihp->i_magic == IMAGE_MAGIC))
-                ? (*ihp->i_dispatch->blockcount)(ihp->i_type_handle)
-                : -1);
+    return (ihp && (ihp->i_magic == IMAGE_MAGIC))
+               ? (*ihp->i_dispatch->blockcount)(ihp->i_type_handle)
+               : -1;
 }
 
 int
@@ -119,15 +122,16 @@ image_seek(void *rp, uint64_t blockno) {
     if (ihp && (ihp->i_magic == IMAGE_MAGIC)) {
         error = (*ihp->i_dispatch->seek)(ihp->i_type_handle, blockno);
     }
-    return (error);
+
+    return error;
 }
 
 uint64_t
 image_tell(void *rp) {
     image_handle_t *ihp = (image_handle_t *)rp;
-    return ((ihp && (ihp->i_magic == IMAGE_MAGIC))
-                ? (*ihp->i_dispatch->tell)(ihp->i_type_handle)
-                : ~0);
+    return (ihp && (ihp->i_magic == IMAGE_MAGIC))
+               ? (*ihp->i_dispatch->tell)(ihp->i_type_handle)
+               : ~0;
 }
 
 int
@@ -138,15 +142,16 @@ image_readblocks(void *rp, void *buffer, uint64_t nblocks) {
         error =
             (*ihp->i_dispatch->readblocks)(ihp->i_type_handle, buffer, nblocks);
     }
-    return (error);
+
+    return error;
 }
 
 int
 image_block_used(void *rp) {
     image_handle_t *ihp = (image_handle_t *)rp;
-    return ((ihp && (ihp->i_magic == IMAGE_MAGIC))
-                ? (*ihp->i_dispatch->block_used)(ihp->i_type_handle)
-                : BLOCK_ERROR);
+    return (ihp && (ihp->i_magic == IMAGE_MAGIC))
+               ? (*ihp->i_dispatch->block_used)(ihp->i_type_handle)
+               : BLOCK_ERROR;
 }
 
 int
@@ -157,7 +162,8 @@ image_writeblocks(void *rp, void *buffer, uint64_t nblocks) {
         error = (*ihp->i_dispatch->writeblocks)(ihp->i_type_handle, buffer,
                                                 nblocks);
     }
-    return (error);
+
+    return error;
 }
 
 int
@@ -167,5 +173,6 @@ image_sync(void *rp) {
     if (ihp && (ihp->i_magic == IMAGE_MAGIC)) {
         error = (*ihp->i_dispatch->sync)(ihp->i_type_handle);
     }
-    return (error);
+
+    return error;
 }
