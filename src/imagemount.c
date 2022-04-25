@@ -49,6 +49,8 @@
  */
 #define NTOHLL(_x) be64toh(_x)
 
+#define FALLBACK_BLOCKSIZE 4096
+
 #ifdef HAVE_SYS_CAPABILITY_H
 /*
  * List of required capabilities.
@@ -175,6 +177,7 @@ static int
 nbd_connect(nbd_context_t *ncp, void *pctx) {
     int spair[2];
     int error = EINVAL;
+    uint64_t nbd_blockcount;
 
     if (ncp && (ncp->svc_fh == -1)) {
         if ((error = socketpair(PF_UNIX, SOCK_STREAM, 0, spair)) == 0) {
@@ -202,16 +205,31 @@ nbd_connect(nbd_context_t *ncp, void *pctx) {
                     logmsg(ncp, 1, "NBD_TIMEOUT %d\n", ncp->nbd_timeout);
                 }
                 if ((ioctl(ncp->nbd_fh, NBD_CLEAR_SOCK) == -1) ||
-                    (ioctl(ncp->nbd_fh, NBD_SET_SOCK, spair[0]) == -1) ||
-                    (ioctl(ncp->nbd_fh, NBD_SET_BLKSIZE, ncp->svc_blocksize) ==
-                     -1) ||
-                    (ioctl(ncp->nbd_fh, NBD_SET_SIZE_BLOCKS,
-                           ncp->svc_blockcount) == -1)) {
+                    (ioctl(ncp->nbd_fh, NBD_SET_SOCK, spair[0]) == -1)) {
                     error = errno;
                     logmsg(ncp, 2,
                            "nbd_connect: ioctl chain fail with %d (%s)\n",
+                           error, strerror(error));                    
+                }
+                nbd_blockcount = ncp->svc_blockcount;
+                if (ioctl(ncp->nbd_fh, NBD_SET_BLKSIZE, ncp->svc_blocksize) == -1) {
+                    // Fallback to a more common size
+                    if (errno == EINVAL && ioctl(ncp->nbd_fh, NBD_SET_BLKSIZE, FALLBACK_BLOCKSIZE) != -1) {
+                        nbd_blockcount = ncp->svc_blocksize * ncp->svc_blockcount / FALLBACK_BLOCKSIZE;
+                    } else {
+                        error = errno;
+                        logmsg(ncp, 2,
+                               "nbd_connect: nbd_set_blocksize fail with %d (%s)\n",
+                               error, strerror(error));
+                    }
+                }
+                if (error == 0 && ioctl(ncp->nbd_fh, NBD_SET_SIZE_BLOCKS, nbd_blockcount) == -1) {
+                    error = errno;
+                    logmsg(ncp, 2,
+                           "nbd_connect: nbd_set_size_blocks fail with %d (%s)\n",
                            error, strerror(error));
-                } else {
+                }
+                if (error == 0) {
                     switch (fork()) {
                     case -1:
                         error = errno;
@@ -309,9 +327,9 @@ nbd_reapchild(int sig, siginfo_t *si, void *vp) {
  */
 static int
 nbd_service_requests(nbd_context_t *ncp, void *pctx) {
-    char *           readbuf      = (char *)malloc(READBUF_INITIAL);
+    char *           readbuf      = (char *)malloc(ncp->svc_blocksize);
     char *           pidfile      = (char *)NULL;
-    size_t           readbuf_size = READBUF_INITIAL;
+    size_t           readbuf_size = ncp->svc_blocksize;
     int              error        = 0;
     volatile int     timetoleave  = 0;
     volatile int     someonedied  = 0;
