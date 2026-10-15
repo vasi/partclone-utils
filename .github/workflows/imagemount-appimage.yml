@@ -1,0 +1,82 @@
+name: imagemount AppImages
+
+on:
+  push:
+    branches: [release]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            arch: x86_64
+          - runner: ubuntu-22.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes autoconf automake build-essential curl libcap-dev libfuse2
+
+      - name: Build imagemount
+        run: |
+          autoreconf --install --force
+          ./configure
+          make -C src imagemount
+
+      - name: Fetch linuxdeploy
+        run: |
+          curl --fail --location \
+            --output linuxdeploy \
+            "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$(uname -m).AppImage"
+          chmod +x linuxdeploy
+
+      - name: Build and test AppImage
+        run: |
+          touch imagemount.svg
+          ./linuxdeploy \
+            --appdir AppDir \
+            --executable src/imagemount \
+            --icon-file imagemount.svg \
+            --create-desktop-file \
+            --output appimage
+
+          mkdir dist
+          mv ./*.AppImage "dist/imagemount-${{ matrix.arch }}.AppImage"
+          APPIMAGE_EXTRACT_AND_RUN=1 \
+            "dist/imagemount-${{ matrix.arch }}.AppImage" -D 2>&1 \
+            | tee smoke-test.log
+          grep --quiet 'usage .* -d disk -f file' smoke-test.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imagemount-${{ matrix.arch }}
+          path: dist/*.AppImage
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: imagemount-*
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Continuous
+          tag_name: continuous
+          prerelease: true
+          files: dist/*.AppImage
