@@ -168,6 +168,8 @@ nbdev_open(nbd_context_t *ncp) {
     return error;
 }
 
+#define NBD_BLOCKSIZE 512
+
 /*
  * Connect the nbd device.
  */
@@ -175,17 +177,23 @@ static int
 nbd_connect(nbd_context_t *ncp, void *pctx) {
     int spair[2];
     int error = EINVAL;
-
+    uint64_t nbd_blockcount;
     if (ncp && (ncp->svc_fh == -1)) {
+        /* blocksize must be a multiple of NBD blocksize */
+        ncp->svc_blocksize  = image_blocksize(pctx);
+        if (ncp->svc_blocksize < NBD_BLOCKSIZE ||
+            ncp->svc_blocksize % NBD_BLOCKSIZE != 0) {
+            return EINVAL;
+        }
         if ((error = socketpair(PF_UNIX, SOCK_STREAM, 0, spair)) == 0) {
             if ((error = nbdev_open(ncp)) == 0) {
                 /*
                  * setup the nbd connection.
                  */
-                ncp->svc_blocksize  = image_blocksize(pctx);
                 ncp->svc_blockcount = image_blockcount(pctx);
                 ncp->svc_offsetmask = ncp->svc_blocksize - 1;
                 ncp->svc_blockmask  = ~ncp->svc_offsetmask;
+                nbd_blockcount = ncp->svc_blockcount * (ncp->svc_blocksize / NBD_BLOCKSIZE);
                 /*
                  * if requested, set NBD connection timeout - avoid slow NBD
                  * server disconnect
@@ -203,10 +211,10 @@ nbd_connect(nbd_context_t *ncp, void *pctx) {
                 }
                 if ((ioctl(ncp->nbd_fh, NBD_CLEAR_SOCK) == -1) ||
                     (ioctl(ncp->nbd_fh, NBD_SET_SOCK, spair[0]) == -1) ||
-                    (ioctl(ncp->nbd_fh, NBD_SET_BLKSIZE, ncp->svc_blocksize) ==
+                    (ioctl(ncp->nbd_fh, NBD_SET_BLKSIZE, NBD_BLOCKSIZE) ==
                      -1) ||
                     (ioctl(ncp->nbd_fh, NBD_SET_SIZE_BLOCKS,
-                           ncp->svc_blockcount) == -1)) {
+                           nbd_blockcount) == -1)) {
                     error = errno;
                     logmsg(ncp, 2,
                            "nbd_connect: ioctl chain fail with %d (%s)\n",
@@ -309,9 +317,9 @@ nbd_reapchild(int sig, siginfo_t *si, void *vp) {
  */
 static int
 nbd_service_requests(nbd_context_t *ncp, void *pctx) {
-    char *           readbuf      = (char *)malloc(READBUF_INITIAL);
+    char *           readbuf      = (char *)malloc(ncp->svc_blocksize);
     char *           pidfile      = (char *)NULL;
-    size_t           readbuf_size = READBUF_INITIAL;
+    size_t           readbuf_size = ncp->svc_blocksize;
     int              error        = 0;
     volatile int     timetoleave  = 0;
     volatile int     someonedied  = 0;
